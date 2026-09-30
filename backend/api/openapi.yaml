@@ -1,0 +1,181 @@
+openapi: 3.0.3
+info:
+  title: Book catalog API
+  version: 1.0.0
+paths:
+  /publishers:
+    get:
+      operationId: listPublishers
+      responses:
+        '200':
+          description: Publishers
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Publisher' }
+        default: { $ref: '#/components/responses/Error' }
+    post:
+      operationId: createPublisher
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PublisherInput' }
+      responses:
+        '200':
+          description: Created publisher
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Publisher' }
+        default: { $ref: '#/components/responses/Error' }
+  /publishers/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ID'
+    get:
+      operationId: getPublisher
+      responses:
+        '200':
+          description: Publisher
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Publisher' }
+        default: { $ref: '#/components/responses/Error' }
+    put:
+      operationId: updatePublisher
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PublisherInput' }
+      responses:
+        '200':
+          description: Updated publisher
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Publisher' }
+        default: { $ref: '#/components/responses/Error' }
+    delete:
+      operationId: deletePublisher
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Deleted' }
+        default: { $ref: '#/components/responses/Error' }
+  /books:
+    get:
+      operationId: listBooks
+      responses:
+        '200':
+          description: Books
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Book' }
+        default: { $ref: '#/components/responses/Error' }
+    post:
+      operationId: createBook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BookInput' }
+      responses:
+        '200':
+          description: Created book
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Book' }
+        default: { $ref: '#/components/responses/Error' }
+  /books/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ID'
+    get:
+      operationId: getBook
+      responses:
+        '200':
+          description: Book
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Book' }
+        default: { $ref: '#/components/responses/Error' }
+    put:
+      operationId: updateBook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BookInput' }
+      responses:
+        '200':
+          description: Updated book
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Book' }
+        default: { $ref: '#/components/responses/Error' }
+    delete:
+      operationId: deleteBook
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Deleted' }
+        default: { $ref: '#/components/responses/Error' }
+components:
+  parameters:
+    ID:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    Error:
+      description: Request failed
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    Problem:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+    Deleted:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string }
+    PublisherInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+    Publisher:
+      allOf:
+        - $ref: '#/components/schemas/PublisherInput'
+        - type: object
+          required: [id]
+          properties:
+            id: { type: string, format: uuid }
+    BookInput:
+      type: object
+      required: [author, name, year, price, publisherId, publicationYear, quantity]
+      properties:
+        author: { type: string }
+        name: { type: string }
+        year: { type: integer }
+        price: { type: integer, format: int64 }
+        publisherId: { type: string, format: uuid }
+        publicationYear: { type: integer }
+        quantity: { type: integer, format: int64 }
+    Book:
+      allOf:
+        - $ref: '#/components/schemas/BookInput'
+        - type: object
+          required: [id]
+          properties:
+            id: { type: string, format: uuid }

@@ -1,0 +1,19 @@
+template: testify
+formatter: gofmt
+packages:
+  bookshop/backend/internal/ports/books:
+    config:
+      dir: internal/adapters/books/mocks
+      filename: books_mock.go
+      pkgname: mocks
+      structname: MockBooks
+    interfaces:
+      Repository:
+  bookshop/backend/internal/ports/publishers:
+    config:
+      dir: internal/adapters/publishers/mocks
+      filename: publishers_mock.go
+      pkgname: mocks
+      structname: MockPublishers
+    interfaces:
+      Repository:
