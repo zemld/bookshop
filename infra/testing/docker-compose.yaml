@@ -1,0 +1,67 @@
+services:
+  db:
+    image: postgres:17-alpine
+    entrypoint: ["sh", "-c", "exec docker-entrypoint.sh \"$@\" 2>&1", "--"]
+    command: ["postgres"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bookshop}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bookshop}
+      POSTGRES_DB: ${POSTGRES_DB:-bookshop}
+    volumes:
+      - catalog_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+  migrate:
+    build:
+      context: ../../backend
+      dockerfile: deploy/Dockerfile.migrate
+    environment:
+      GOOSE_DRIVER: postgres
+      GOOSE_DBSTRING: host=db port=5432 sslmode=disable
+      GOOSE_MIGRATION_DIR: /migrations
+      PGUSER: ${POSTGRES_USER:-bookshop}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-bookshop}
+      PGDATABASE: ${POSTGRES_DB:-bookshop}
+    command: ["up"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+    stop_grace_period: 15s
+  backend:
+    build:
+      context: ../../backend
+      dockerfile: deploy/Dockerfile
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER:-bookshop}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-bookshop}
+      PGDATABASE: ${POSTGRES_DB:-bookshop}
+      PGSSLMODE: disable
+      API_ADDR: ":8080"
+    ports:
+      - "127.0.0.1:${API_PORT:-8080}:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    stop_grace_period: 15s
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: deploy/Dockerfile
+    environment:
+      API_URL: http://backend:8080
+      WEB_ADDR: ":8081"
+    ports:
+      - "${WEB_PORT:-8081}:8081"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    stop_grace_period: 15s
+volumes:
+  catalog_data:
