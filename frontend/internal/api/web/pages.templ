@@ -1,0 +1,116 @@
+package web
+
+import "strconv"
+
+templ document(p page) {
+	<!DOCTYPE html>
+	<html lang="ru">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>{ p.Title } — Каталог книг</title>
+			<link rel="stylesheet" href="/assets/site.css"/>
+			<script src="/assets/htmx.min.js" defer></script>
+			<script src="/assets/site.js" defer></script>
+		</head>
+		<body>
+			<div id="page" hx-boost="true" hx-target="#page" hx-select="#page" hx-swap="outerHTML">
+				<header class="site-header">
+					<div class="header-inner">
+						<a class="brand" href="/books">Каталог книг</a>
+						<nav aria-label="Главная навигация">
+							<a class={ templ.KV("active", p.Kind == booksPage || p.Kind == bookPage) } href="/books">Книги</a>
+							<a class={ templ.KV("active", p.Kind == publishersPage || p.Kind == publisherPage) } href="/publishers">Издательства</a>
+						</nav>
+					</div>
+				</header>
+				<main class="content">
+					@content(p)
+				</main>
+			</div>
+		</body>
+	</html>
+}
+
+templ content(p page) {
+	if p.Kind == booksPage {
+		<div class="page-heading">
+			<div><h1>Книги</h1><p>Всего: { strconv.Itoa(len(p.Books)) }</p></div>
+			<a class="button" href="/books/new">Добавить книгу</a>
+		</div>
+		if len(p.Books) == 0 {
+			<div class="empty"><p>Книг пока нет.</p><a href="/books/new">Добавить первую книгу</a></div>
+		} else {
+			<ul class="item-list">
+				for _, b := range p.Books {
+					<li><a class="item" href={ templ.SafeURL("/books/" + b.ID.String()) }>
+						<span><strong>{ b.Name }</strong><small>{ b.Author }</small></span>
+						<span class="item-detail">{ strconv.Itoa(int(b.Year)) } · { strconv.FormatInt(b.Price, 10) } ₽</span>
+					</a></li>
+				}
+			</ul>
+		}
+	} else if p.Kind == publishersPage {
+		<div class="page-heading">
+			<div><h1>Издательства</h1><p>Всего: { strconv.Itoa(len(p.Publishers)) }</p></div>
+			<a class="button" href="/publishers/new">Добавить издательство</a>
+		</div>
+		if len(p.Publishers) == 0 {
+			<div class="empty"><p>Издательств пока нет.</p><a href="/publishers/new">Добавить первое издательство</a></div>
+		} else {
+			<ul class="item-list">
+				for _, pub := range p.Publishers {
+					<li><a class="item" href={ templ.SafeURL("/publishers/" + pub.ID.String()) }><strong>{ pub.Name }</strong><span class="item-detail">Открыть →</span></a></li>
+				}
+			</ul>
+		}
+	} else if p.Kind == bookPage {
+		<a class="back" href="/books">← К списку книг</a>
+		if p.New {
+			<h1>Новая книга</h1>
+		} else {
+			<h1>Редактировать книгу</h1>
+		}
+		<section class="form-panel">
+			<form method="post" action={ bookAction(p) } hx-push-url="false">
+				<div class="form-grid">
+					<label>Автор <input name="author" required value={ p.Book.Author }/></label>
+					<label>Название <input name="name" required value={ p.Book.Name }/></label>
+					<label>Год выхода <input type="number" name="year" min="1" max="9999" required value={ bookNumber(p.New, int64(p.Book.Year)) }/></label>
+					<label>Цена, ₽ <input type="number" name="price" min="0" required value={ bookNumber(p.New, p.Book.Price) }/></label>
+					<label class="wide">Издательство <select name="publisherId" required><option value="">Выберите издательство</option>
+						for _, pub := range p.Publishers {
+							<option value={ pub.ID.String() } selected?={ pub.ID == p.Book.PublisherID }>{ pub.Name }</option>
+						}
+					</select></label>
+					<label>Год выпуска версии <input type="number" name="publicationYear" min="1" max="9999" required value={ bookNumber(p.New, int64(p.Book.PublicationYear)) }/></label>
+					<label>Остаток <input type="number" name="quantity" min="0" required value={ bookNumber(p.New, p.Book.Quantity) }/></label>
+				</div>
+				<button class="button" type="submit">Сохранить</button>
+			</form>
+		</section>
+		if !p.New {
+			<form class="delete-form" method="post" action={ templ.SafeURL("/books/" + p.Book.ID.String() + "/delete") } hx-push-url="false"><button class="delete-button" type="submit">Удалить книгу</button></form>
+		}
+	} else if p.Kind == publisherPage {
+		<a class="back" href="/publishers">← К списку издательств</a>
+		if p.New {
+			<h1>Новое издательство</h1>
+		} else {
+			<h1>Редактировать издательство</h1>
+		}
+		<section class="form-panel">
+			<form method="post" action={ publisherAction(p) } hx-push-url="false">
+				<label>Название <input name="name" required value={ p.Publisher.Name }/></label>
+				<button class="button" type="submit">Сохранить</button>
+			</form>
+		</section>
+		if !p.New {
+			<form class="delete-form" method="post" action={ templ.SafeURL("/publishers/" + p.Publisher.ID.String() + "/delete") } hx-push-url="false"><button class="delete-button" type="submit">Удалить издательство</button></form>
+		}
+	} else {
+		<h1>Ошибка</h1>
+		<p role="alert">{ p.Error }</p>
+		<a href="/books">Вернуться к книгам</a>
+	}
+}

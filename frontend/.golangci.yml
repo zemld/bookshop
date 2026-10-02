@@ -1,0 +1,9 @@
+version: "2"
+
+formatters:
+  enable:
+    - goimports
+    - gofmt
+
+linters:
+  default: standard
