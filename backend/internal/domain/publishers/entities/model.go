@@ -3,8 +3,6 @@ package entities
 import (
 	"strings"
 
-	"bookshop/backend/internal/domain/shared"
-
 	"github.com/google/uuid"
 )
 
@@ -16,7 +14,7 @@ type Publisher struct {
 func (p *Publisher) Validate() error {
 	p.Name = strings.TrimSpace(p.Name)
 	if p.Name == "" {
-		return shared.ErrInvalid
+		return ErrNameRequired
 	}
 
 	return nil

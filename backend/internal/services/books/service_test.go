@@ -41,7 +41,6 @@ func TestCreateBook(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Arrange
 			repo := mocks.NewMockBooks(t)
 			if tt.wantErr != shared.ErrInvalid {
 				repo.EXPECT().CreateBook(mock.Anything, normalized).Return(tt.want, tt.repoErr).Once()
@@ -49,10 +48,8 @@ func TestCreateBook(t *testing.T) {
 
 			s := Service{Repository: repo}
 
-			// Act
 			got, err := s.CreateBook(context.Background(), tt.input)
 
-			// Assert
 			if tt.wantErr == nil {
 				require.NoError(t, err)
 			} else {
@@ -96,7 +93,6 @@ func TestUpdateBook(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Arrange
 			repo := mocks.NewMockBooks(t)
 			if tt.wantErr != shared.ErrInvalid {
 				repo.EXPECT().UpdateBook(mock.Anything, normalized).Return(tt.want, tt.repoErr).Once()
@@ -104,10 +100,8 @@ func TestUpdateBook(t *testing.T) {
 
 			s := Service{Repository: repo}
 
-			// Act
 			got, err := s.UpdateBook(context.Background(), tt.input)
 
-			// Assert
 			if tt.wantErr == nil {
 				require.NoError(t, err)
 			} else {
@@ -142,15 +136,12 @@ func TestListBooks(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Arrange
 			repo := mocks.NewMockBooks(t)
 			repo.EXPECT().ListBooks(mock.Anything).Return(tt.want, tt.wantErr).Once()
 			s := Service{Repository: repo}
 
-			// Act
 			got, err := s.ListBooks(context.Background())
 
-			// Assert
 			if tt.wantErr == nil {
 				require.NoError(t, err)
 			} else {
@@ -182,15 +173,12 @@ func TestGetBook(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Arrange
 			repo := mocks.NewMockBooks(t)
 			repo.EXPECT().GetBook(mock.Anything, id).Return(tt.want, tt.wantErr).Once()
 			s := Service{Repository: repo}
 
-			// Act
 			got, err := s.GetBook(context.Background(), id)
 
-			// Assert
 			if tt.wantErr == nil {
 				require.NoError(t, err)
 			} else {
@@ -221,15 +209,12 @@ func TestDeleteBook(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Arrange
 			repo := mocks.NewMockBooks(t)
 			repo.EXPECT().DeleteBook(mock.Anything, id).Return(tt.wantErr).Once()
 			s := Service{Repository: repo}
 
-			// Act
 			err := s.DeleteBook(context.Background(), id)
 
-			// Assert
 			if tt.wantErr == nil {
 				require.NoError(t, err)
 			} else {

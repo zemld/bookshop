@@ -5,8 +5,7 @@ import (
 	"net/http"
 )
 
-// htmx ignores response headers on 3xx. Non-JS requests retain the 303.
-func navigate(w http.ResponseWriter, r *http.Request, path string) {
+func navigateToPage(w http.ResponseWriter, r *http.Request, path string) {
 	if r.Header.Get("HX-Request") == "true" {
 		location, _ := json.Marshal(struct {
 			Path   string `json:"path"`

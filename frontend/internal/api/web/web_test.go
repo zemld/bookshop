@@ -19,7 +19,7 @@ import (
 
 const testID = "4e643615-2a28-40a5-8e7d-fbe6dd2d498d"
 
-func testRoutes(apiURL string) http.Handler {
+func createTestHandler(apiURL string) http.Handler {
 	c := core.New(apiURL)
 	b := &bookhttp.Client{Core: c}
 	p := &publisherhttp.Client{Core: c}
@@ -29,7 +29,7 @@ func testRoutes(apiURL string) http.Handler {
 		Books: b, DeleteBook: b, Publishers: p, GetPublisher: p, DeletePublisher: p,
 		LoadBookForm: bs, CreateBook: b, UpdateBook: b,
 		CreatePublisher: ps, UpdatePublisher: ps,
-	}).Routes()
+	}).CreateHandler()
 }
 
 func TestPublisherForms(t *testing.T) {
@@ -44,17 +44,22 @@ func TestPublisherForms(t *testing.T) {
 	req := httptest.NewRequest("POST", "/publishers", strings.NewReader(url.Values{"name": {" Имя "}}.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	res := httptest.NewRecorder()
-	testRoutes(api.URL).ServeHTTP(res, req)
+	createTestHandler(api.URL).ServeHTTP(res, req)
 	require.Equal(t, http.StatusSeeOther, res.Code)
 	require.Equal(t, "/publishers/"+testID, res.Header().Get("Location"))
 }
 
 func TestBookInvalidForm(t *testing.T) {
 	t.Parallel()
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "GET /publishers", r.Method+" "+r.URL.Path)
+		_, _ = w.Write([]byte(`[]`))
+	}))
+	t.Cleanup(api.Close)
 	req := httptest.NewRequest("POST", "/books", strings.NewReader(url.Values{"year": {"0"}}.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	res := httptest.NewRecorder()
-	testRoutes("http://invalid").ServeHTTP(res, req)
+	createTestHandler(api.URL).ServeHTTP(res, req)
 	require.Equal(t, http.StatusBadRequest, res.Code)
 	require.Contains(t, res.Body.String(), `lang="ru"`)
 }
@@ -62,7 +67,7 @@ func TestBookInvalidForm(t *testing.T) {
 func TestUnknownPage(t *testing.T) {
 	t.Parallel()
 	res := httptest.NewRecorder()
-	render(res, http.StatusOK, page{Kind: 99, Title: "Книги"})
+	renderPage(res, http.StatusOK, page{Kind: 99, Title: "Книги"})
 	require.Equal(t, http.StatusInternalServerError, res.Code)
 	require.NotContains(t, res.Body.String(), "<html")
 }
@@ -83,7 +88,7 @@ func TestBookFormAndRoutes(t *testing.T) {
 		}
 	}))
 	defer api.Close()
-	routes := testRoutes(api.URL)
+	routes := createTestHandler(api.URL)
 	for _, tt := range []struct{ path, want string }{
 		{"/books/new", `action="/books"`},
 		{"/books/" + testID, `value="` + testID + `" selected`},
@@ -119,6 +124,10 @@ func TestBookFormSyntaxAndBackendValidation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == "GET" && r.URL.Path == "/publishers" {
+					_, _ = w.Write([]byte(`[]`))
+					return
+				}
 				require.True(t, tt.wantBackend, "malformed input must not reach backend")
 				require.Equal(t, "POST", r.Method)
 				require.Equal(t, "/books", r.URL.Path)
@@ -127,7 +136,7 @@ func TestBookFormSyntaxAndBackendValidation(t *testing.T) {
 				require.Equal(t, float64(-2), sent["price"])
 				require.Equal(t, float64(2000), sent["publicationYear"])
 				w.WriteHeader(http.StatusBadRequest)
-				_, _ = w.Write([]byte(`{"error":"invalid book"}`))
+				_, _ = w.Write([]byte(`{"error":"book_price_negative"}`))
 			}))
 			defer api.Close()
 			input := url.Values{}
@@ -140,12 +149,15 @@ func TestBookFormSyntaxAndBackendValidation(t *testing.T) {
 			req := httptest.NewRequest("POST", "/books", strings.NewReader(input.Encode()))
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 			res := httptest.NewRecorder()
-			testRoutes(api.URL).ServeHTTP(res, req)
+			createTestHandler(api.URL).ServeHTTP(res, req)
 			require.Equal(t, http.StatusBadRequest, res.Code)
 			if tt.wantBackend {
-				require.Contains(t, res.Body.String(), "API 400: invalid book")
+				require.Contains(t, res.Body.String(), "Цена не может быть отрицательной.")
+				require.NotContains(t, res.Body.String(), "Год выпуска версии не может быть раньше года выхода.")
+				require.NotContains(t, res.Body.String(), "book_price_negative")
+				require.NotContains(t, res.Body.String(), "API 400:")
 			} else {
-				require.Contains(t, res.Body.String(), "invalid form")
+				require.Contains(t, res.Body.String(), `id="`+tt.key+`-error"`)
 			}
 		})
 	}
@@ -161,7 +173,9 @@ func TestInvalidRouteID(t *testing.T) {
 	} {
 		req := httptest.NewRequest(tt.method, tt.path, nil)
 		res := httptest.NewRecorder()
-		testRoutes("http://invalid").ServeHTTP(res, req)
+		createTestHandler("http://invalid").ServeHTTP(res, req)
 		require.Equal(t, http.StatusBadRequest, res.Code)
+		require.Contains(t, res.Body.String(), "Некорректный идентификатор записи.")
+		require.NotContains(t, res.Body.String(), "Некорректный формат запроса.")
 	}
 }

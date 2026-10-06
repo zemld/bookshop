@@ -86,14 +86,14 @@ func TestOperationsHTTP(t *testing.T) {
 		},
 		{
 			name: "missing book", method: http.MethodGet, path: "/books/" + bookID.String(), wantStatus: http.StatusNotFound,
-			wantJSON: `{"error":"record not found"}`,
+			wantJSON: `{"error":"not_found"}`,
 			setup: func(b *bookmocks.MockBooks, _ *publishermocks.MockPublishers) {
 				b.EXPECT().GetBook(mock.Anything, bookID).Return(bookentities.Book{}, shared.ErrNotFound)
 			},
 		},
 		{
 			name: "invalid book", method: http.MethodPost, path: "/books", body: bookInput,
-			wantStatus: http.StatusBadRequest, wantJSON: `{"error":"invalid input"}`,
+			wantStatus: http.StatusBadRequest, wantJSON: `{"error":"invalid_input"}`,
 			setup: func(b *bookmocks.MockBooks, _ *publishermocks.MockPublishers) {
 				input := book
 				input.ID = uuid.Nil
@@ -143,8 +143,16 @@ func TestOperationsHTTP(t *testing.T) {
 			},
 		},
 		{
+			name: "referenced publisher", method: http.MethodDelete, path: "/publishers/" + publisherID.String(),
+			wantStatus: http.StatusConflict,
+			wantJSON:   `{"error":"publisher_referenced"}`,
+			setup: func(_ *bookmocks.MockBooks, p *publishermocks.MockPublishers) {
+				p.EXPECT().DeletePublisher(mock.Anything, publisherID).Return(shared.ErrConflict)
+			},
+		},
+		{
 			name: "publisher conflict", method: http.MethodPost, path: "/publishers", body: `{"name":"Publisher"}`,
-			wantStatus: http.StatusConflict, wantJSON: `{"error":"duplicate or referenced record"}`,
+			wantStatus: http.StatusConflict, wantJSON: `{"error":"conflict"}`,
 			setup: func(_ *bookmocks.MockBooks, p *publishermocks.MockPublishers) {
 				p.EXPECT().CreatePublisher(mock.Anything, publisherentities.Publisher{Name: publisher.Name}).
 					Return(publisherentities.Publisher{}, shared.ErrConflict)
@@ -152,7 +160,7 @@ func TestOperationsHTTP(t *testing.T) {
 		},
 		{
 			name: "unexpected publisher error", method: http.MethodGet, path: "/publishers/" + publisherID.String(),
-			wantStatus: http.StatusInternalServerError, wantJSON: `{"error":"internal server error"}`,
+			wantStatus: http.StatusInternalServerError, wantJSON: `{"error":"internal_error"}`,
 			setup: func(_ *bookmocks.MockBooks, p *publishermocks.MockPublishers) {
 				p.EXPECT().GetPublisher(mock.Anything, publisherID).
 					Return(publisherentities.Publisher{}, errors.New("private database error"))

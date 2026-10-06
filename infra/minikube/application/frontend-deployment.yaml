@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: bookshop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      terminationGracePeriodSeconds: 15
+      containers:
+        - name: frontend
+          image: bookshop-frontend:local
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 8081
+          env:
+            - name: API_URL
+              value: http://backend:8080
+            - name: WEB_ADDR
+              value: ":8081"
+          readinessProbe:
+            httpGet:
+              path: /books
+              port: http
+            periodSeconds: 3
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 32Mi
+            limits:
+              memory: 128Mi

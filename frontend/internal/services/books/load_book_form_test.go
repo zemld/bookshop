@@ -36,7 +36,7 @@ func TestLoadBookForm(t *testing.T) {
 				}
 				if r.URL.Path == tt.failAt {
 					w.WriteHeader(http.StatusBadRequest)
-					_, _ = w.Write([]byte(`{"error":"bad"}`))
+					_, _ = w.Write([]byte(`{"error":"invalid_input"}`))
 					return
 				}
 				if r.URL.Path == "/publishers" {
@@ -53,7 +53,7 @@ func TestLoadBookForm(t *testing.T) {
 			form, err := s.LoadBookForm(context.Background(), id)
 			require.Equal(t, tt.wantCalls, calls)
 			if tt.failAt != "" {
-				require.EqualError(t, err, "API 400: bad")
+				require.EqualError(t, err, "API 400: invalid_input")
 				return
 			}
 			require.NoError(t, err)

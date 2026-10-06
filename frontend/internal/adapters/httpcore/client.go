@@ -16,6 +16,15 @@ type Client struct {
 	client *http.Client
 }
 
+type APIError struct {
+	StatusCode int
+	Code       string
+}
+
+func (e *APIError) Error() string {
+	return fmt.Sprintf("API %d: %s", e.StatusCode, e.Code)
+}
+
 func New(api string) *Client {
 	return &Client{
 		api: strings.TrimRight(api, "/"),
@@ -30,7 +39,6 @@ func (c *Client) CloseIdleConnections() {
 	c.client.CloseIdleConnections()
 }
 
-// Stop releases the transport owned by this client after inbound requests drain.
 func (c *Client) Stop() { c.CloseIdleConnections() }
 
 func (c *Client) Request(ctx context.Context, method, path string, input, output any) error {
@@ -58,8 +66,10 @@ func (c *Client) Request(ctx context.Context, method, path string, input, output
 		var problem struct {
 			Error string `json:"error"`
 		}
-		_ = json.NewDecoder(res.Body).Decode(&problem)
-		return fmt.Errorf("API %d: %s", res.StatusCode, problem.Error)
+		if err := json.NewDecoder(res.Body).Decode(&problem); err != nil || problem.Error == "" {
+			problem.Error = "invalid_response"
+		}
+		return &APIError{StatusCode: res.StatusCode, Code: problem.Error}
 	}
 	if output != nil {
 		return json.NewDecoder(res.Body).Decode(output)

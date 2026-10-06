@@ -137,6 +137,9 @@ input, select {
   text-decoration: underline;
 }
 [role="alert"] { max-width: 680px; color: #a33434; overflow-wrap: anywhere; }
+.form-error { margin: 0 0 24px; }
+.field-error { display: block; margin-top: 6px; color: #a33434; font-size: 14px; font-weight: 400; }
+input[aria-invalid="true"], select[aria-invalid="true"] { border-color: #a33434; }
 
 @media (max-width: 600px) {
   .header-inner { flex-wrap: wrap; gap: 0 24px; padding-top: 12px; }

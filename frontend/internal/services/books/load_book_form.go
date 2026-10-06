@@ -8,8 +8,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// LoadBookForm loads the publisher choices before the book, preserving the UI's
-// existing error precedence and allowing the selected publisher to render.
 func (s Service) LoadBookForm(ctx context.Context, id uuid.UUID) (bookdomain.FormData, error) {
 	publishers, err := s.Publishers.ListPublishers(ctx)
 	if err != nil {

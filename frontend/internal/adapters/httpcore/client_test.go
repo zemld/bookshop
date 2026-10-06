@@ -45,8 +45,8 @@ func TestRequest(t *testing.T) {
 			method:    http.MethodGet,
 			path:      "/publishers/1",
 			status:    http.StatusNotFound,
-			response:  `{"error":"не найдено"}`,
-			wantError: "API 404: не найдено",
+			response:  `{"error":"not_found"}`,
+			wantError: "API 404: not_found",
 		},
 	}
 	for _, tt := range tests {

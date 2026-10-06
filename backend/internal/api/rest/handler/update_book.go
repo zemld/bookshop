@@ -9,7 +9,7 @@ import (
 )
 
 func (h Handler) UpdateBook(ctx context.Context, req *ogen.BookInput, params ogen.UpdateBookParams) (*ogen.Book, error) {
-	b := convert.ToDomainBook(req)
+	b := convert.ConvertToDomainBook(req)
 	b.ID = params.ID
 
 	updated, err := h.Books.UpdateBook(ctx, b)
@@ -17,7 +17,7 @@ func (h Handler) UpdateBook(ctx context.Context, req *ogen.BookInput, params oge
 		return nil, fmt.Errorf("update book: %w", err)
 	}
 
-	value := convert.ToOgenBook(updated)
+	value := convert.ConvertToOgenBook(updated)
 
 	return &value, nil
 }

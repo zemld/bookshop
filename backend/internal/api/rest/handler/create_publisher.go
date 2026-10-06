@@ -15,7 +15,7 @@ func (h Handler) CreatePublisher(ctx context.Context, req *ogen.PublisherInput) 
 		return nil, fmt.Errorf("create publisher: %w", err)
 	}
 
-	value := convert.ToOgenPublisher(p)
+	value := convert.ConvertToOgenPublisher(p)
 
 	return &value, nil
 }

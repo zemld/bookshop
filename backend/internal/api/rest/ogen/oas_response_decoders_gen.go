@@ -83,6 +83,15 @@ func decodeCreateBookResponse(resp *http.Response) (res *Book, _ error) {
 				}
 				return res, err
 			}
+			// Validate response.
+			if err := func() error {
+				if err := response.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return res, errors.Wrap(err, "validate")
+			}
 			return &ErrorStatusCode{
 				StatusCode: resp.StatusCode,
 				Response:   response,
@@ -165,6 +174,15 @@ func decodeCreatePublisherResponse(resp *http.Response) (res *Publisher, _ error
 					Err:         err,
 				}
 				return res, err
+			}
+			// Validate response.
+			if err := func() error {
+				if err := response.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return res, errors.Wrap(err, "validate")
 			}
 			return &ErrorStatusCode{
 				StatusCode: resp.StatusCode,
@@ -249,6 +267,15 @@ func decodeDeleteBookResponse(resp *http.Response) (res *Deleted, _ error) {
 				}
 				return res, err
 			}
+			// Validate response.
+			if err := func() error {
+				if err := response.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return res, errors.Wrap(err, "validate")
+			}
 			return &ErrorStatusCode{
 				StatusCode: resp.StatusCode,
 				Response:   response,
@@ -331,6 +358,15 @@ func decodeDeletePublisherResponse(resp *http.Response) (res *Deleted, _ error) 
 					Err:         err,
 				}
 				return res, err
+			}
+			// Validate response.
+			if err := func() error {
+				if err := response.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return res, errors.Wrap(err, "validate")
 			}
 			return &ErrorStatusCode{
 				StatusCode: resp.StatusCode,
@@ -415,6 +451,15 @@ func decodeGetBookResponse(resp *http.Response) (res *Book, _ error) {
 				}
 				return res, err
 			}
+			// Validate response.
+			if err := func() error {
+				if err := response.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return res, errors.Wrap(err, "validate")
+			}
 			return &ErrorStatusCode{
 				StatusCode: resp.StatusCode,
 				Response:   response,
@@ -497,6 +542,15 @@ func decodeGetPublisherResponse(resp *http.Response) (res *Publisher, _ error) {
 					Err:         err,
 				}
 				return res, err
+			}
+			// Validate response.
+			if err := func() error {
+				if err := response.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return res, errors.Wrap(err, "validate")
 			}
 			return &ErrorStatusCode{
 				StatusCode: resp.StatusCode,
@@ -598,6 +652,15 @@ func decodeListBooksResponse(resp *http.Response) (res []Book, _ error) {
 				}
 				return res, err
 			}
+			// Validate response.
+			if err := func() error {
+				if err := response.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return res, errors.Wrap(err, "validate")
+			}
 			return &ErrorStatusCode{
 				StatusCode: resp.StatusCode,
 				Response:   response,
@@ -698,6 +761,15 @@ func decodeListPublishersResponse(resp *http.Response) (res []Publisher, _ error
 				}
 				return res, err
 			}
+			// Validate response.
+			if err := func() error {
+				if err := response.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return res, errors.Wrap(err, "validate")
+			}
 			return &ErrorStatusCode{
 				StatusCode: resp.StatusCode,
 				Response:   response,
@@ -781,6 +853,15 @@ func decodeUpdateBookResponse(resp *http.Response) (res *Book, _ error) {
 				}
 				return res, err
 			}
+			// Validate response.
+			if err := func() error {
+				if err := response.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return res, errors.Wrap(err, "validate")
+			}
 			return &ErrorStatusCode{
 				StatusCode: resp.StatusCode,
 				Response:   response,
@@ -863,6 +944,15 @@ func decodeUpdatePublisherResponse(resp *http.Response) (res *Publisher, _ error
 					Err:         err,
 				}
 				return res, err
+			}
+			// Validate response.
+			if err := func() error {
+				if err := response.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return res, errors.Wrap(err, "validate")
 			}
 			return &ErrorStatusCode{
 				StatusCode: resp.StatusCode,

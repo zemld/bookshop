@@ -9,8 +9,6 @@ import (
 	publisherports "bookshop/frontend/internal/ports/publishers"
 )
 
-// Direct ports are used for unadorned list/get/delete transport operations;
-// services exist only where the UI adds normalization or coordinates calls.
 type Server struct {
 	Books           bookports.ListBooks
 	DeleteBook      bookports.DeleteBook
@@ -24,13 +22,13 @@ type Server struct {
 	UpdatePublisher publishers.UpdatePublisher
 }
 
-func (s Server) Routes() http.Handler {
+func (s Server) CreateHandler() http.Handler {
 	m := http.NewServeMux()
 	m.Handle("GET /assets/", http.FileServer(http.FS(assets)))
 	m.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/books", http.StatusSeeOther)
 	})
-	s.publisherRoutes(m)
-	s.bookRoutes(m)
+	s.registerPublisherRoutes(m)
+	s.registerBookRoutes(m)
 	return m
 }
