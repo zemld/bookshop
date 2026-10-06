@@ -16,7 +16,7 @@ func (h Handler) ListPublishers(ctx context.Context) ([]ogen.Publisher, error) {
 
 	result := make([]ogen.Publisher, 0, len(items))
 	for _, p := range items {
-		result = append(result, convert.ToOgenPublisher(p))
+		result = append(result, convert.ConvertToOgenPublisher(p))
 	}
 
 	return result, nil

@@ -25,7 +25,7 @@ func scanBook(row pgx.Row) (entities.Book, error) {
 
 	err := row.Scan(&b.ID, &b.Author, &b.Name, &b.Year, &b.Price, &b.PublisherID, &b.PublicationYear, &b.Quantity)
 	if err != nil {
-		return b, fmt.Errorf("scan book: %w", postgreserrors.Map(err))
+		return b, fmt.Errorf("scan book: %w", postgreserrors.MapDatabaseError(err))
 	}
 
 	return b, nil
@@ -34,7 +34,7 @@ func scanBook(row pgx.Row) (entities.Book, error) {
 func (s Store) ListBooks(ctx context.Context) ([]entities.Book, error) {
 	rows, err := s.DB.Query(ctx, `SELECT `+bookColumns+` FROM books ORDER BY name,id`)
 	if err != nil {
-		return nil, fmt.Errorf("query books: %w", postgreserrors.Map(err))
+		return nil, fmt.Errorf("query books: %w", postgreserrors.MapDatabaseError(err))
 	}
 	defer rows.Close()
 
@@ -50,7 +50,7 @@ func (s Store) ListBooks(ctx context.Context) ([]entities.Book, error) {
 	}
 
 	if err := rows.Err(); err != nil {
-		return items, fmt.Errorf("iterate books: %w", postgreserrors.Map(err))
+		return items, fmt.Errorf("iterate books: %w", postgreserrors.MapDatabaseError(err))
 	}
 
 	return items, nil
@@ -77,7 +77,7 @@ func (s Store) UpdateBook(ctx context.Context, b entities.Book) (entities.Book, 
 func (s Store) DeleteBook(ctx context.Context, id uuid.UUID) error {
 	tag, err := s.DB.Exec(ctx, `DELETE FROM books WHERE id=$1`, id)
 	if err != nil {
-		return fmt.Errorf("delete book: %w", postgreserrors.Map(err))
+		return fmt.Errorf("delete book: %w", postgreserrors.MapDatabaseError(err))
 	}
 
 	if tag.RowsAffected() == 0 {

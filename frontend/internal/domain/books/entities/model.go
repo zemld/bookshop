@@ -2,7 +2,6 @@ package entities
 
 import "github.com/google/uuid"
 
-// Year is the wire-compatible year value; backend owns its business constraints.
 type Year int
 
 type Book struct {

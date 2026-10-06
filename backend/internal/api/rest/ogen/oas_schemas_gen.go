@@ -5,6 +5,7 @@ package ogen
 import (
 	"fmt"
 
+	"github.com/go-faster/errors"
 	"github.com/google/uuid"
 )
 
@@ -229,17 +230,240 @@ func (s *ErrorStatusCode) SetResponse(val Problem) {
 
 // Ref: #/components/schemas/Problem
 type Problem struct {
-	Error string `json:"error"`
+	Error ProblemError `json:"error"`
 }
 
 // GetError returns the value of Error.
-func (s *Problem) GetError() string {
+func (s *Problem) GetError() ProblemError {
 	return s.Error
 }
 
 // SetError sets the value of Error.
-func (s *Problem) SetError(val string) {
+func (s *Problem) SetError(val ProblemError) {
 	s.Error = val
+}
+
+type ProblemError string
+
+const (
+	ProblemErrorInvalidInput                  ProblemError = "invalid_input"
+	ProblemErrorConflict                      ProblemError = "conflict"
+	ProblemErrorNotFound                      ProblemError = "not_found"
+	ProblemErrorInternalError                 ProblemError = "internal_error"
+	ProblemErrorBookAuthorRequired            ProblemError = "book_author_required"
+	ProblemErrorBookNameRequired              ProblemError = "book_name_required"
+	ProblemErrorBookYearInvalid               ProblemError = "book_year_invalid"
+	ProblemErrorBookPriceNegative             ProblemError = "book_price_negative"
+	ProblemErrorBookPublisherRequired         ProblemError = "book_publisher_required"
+	ProblemErrorBookPublicationYearInvalid    ProblemError = "book_publication_year_invalid"
+	ProblemErrorBookPublicationYearBeforeYear ProblemError = "book_publication_year_before_year"
+	ProblemErrorBookQuantityNegative          ProblemError = "book_quantity_negative"
+	ProblemErrorPublisherNameRequired         ProblemError = "publisher_name_required"
+	ProblemErrorPublisherNameDuplicate        ProblemError = "publisher_name_duplicate"
+	ProblemErrorBookDuplicate                 ProblemError = "book_duplicate"
+	ProblemErrorBookPublisherNotFound         ProblemError = "book_publisher_not_found"
+	ProblemErrorPublisherReferenced           ProblemError = "publisher_referenced"
+	ProblemErrorInvalidRequest                ProblemError = "invalid_request"
+	ProblemErrorInvalidJSON                   ProblemError = "invalid_json"
+	ProblemErrorTrailingJSONData              ProblemError = "trailing_json_data"
+	ProblemErrorInvalidID                     ProblemError = "invalid_id"
+	ProblemErrorInvalidAuthor                 ProblemError = "invalid_author"
+	ProblemErrorInvalidName                   ProblemError = "invalid_name"
+	ProblemErrorInvalidYear                   ProblemError = "invalid_year"
+	ProblemErrorInvalidPrice                  ProblemError = "invalid_price"
+	ProblemErrorInvalidPublisherID            ProblemError = "invalid_publisher_id"
+	ProblemErrorInvalidPublicationYear        ProblemError = "invalid_publication_year"
+	ProblemErrorInvalidQuantity               ProblemError = "invalid_quantity"
+)
+
+// AllValues returns all ProblemError values.
+func (ProblemError) AllValues() []ProblemError {
+	return []ProblemError{
+		ProblemErrorInvalidInput,
+		ProblemErrorConflict,
+		ProblemErrorNotFound,
+		ProblemErrorInternalError,
+		ProblemErrorBookAuthorRequired,
+		ProblemErrorBookNameRequired,
+		ProblemErrorBookYearInvalid,
+		ProblemErrorBookPriceNegative,
+		ProblemErrorBookPublisherRequired,
+		ProblemErrorBookPublicationYearInvalid,
+		ProblemErrorBookPublicationYearBeforeYear,
+		ProblemErrorBookQuantityNegative,
+		ProblemErrorPublisherNameRequired,
+		ProblemErrorPublisherNameDuplicate,
+		ProblemErrorBookDuplicate,
+		ProblemErrorBookPublisherNotFound,
+		ProblemErrorPublisherReferenced,
+		ProblemErrorInvalidRequest,
+		ProblemErrorInvalidJSON,
+		ProblemErrorTrailingJSONData,
+		ProblemErrorInvalidID,
+		ProblemErrorInvalidAuthor,
+		ProblemErrorInvalidName,
+		ProblemErrorInvalidYear,
+		ProblemErrorInvalidPrice,
+		ProblemErrorInvalidPublisherID,
+		ProblemErrorInvalidPublicationYear,
+		ProblemErrorInvalidQuantity,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ProblemError) MarshalText() ([]byte, error) {
+	switch s {
+	case ProblemErrorInvalidInput:
+		return []byte(s), nil
+	case ProblemErrorConflict:
+		return []byte(s), nil
+	case ProblemErrorNotFound:
+		return []byte(s), nil
+	case ProblemErrorInternalError:
+		return []byte(s), nil
+	case ProblemErrorBookAuthorRequired:
+		return []byte(s), nil
+	case ProblemErrorBookNameRequired:
+		return []byte(s), nil
+	case ProblemErrorBookYearInvalid:
+		return []byte(s), nil
+	case ProblemErrorBookPriceNegative:
+		return []byte(s), nil
+	case ProblemErrorBookPublisherRequired:
+		return []byte(s), nil
+	case ProblemErrorBookPublicationYearInvalid:
+		return []byte(s), nil
+	case ProblemErrorBookPublicationYearBeforeYear:
+		return []byte(s), nil
+	case ProblemErrorBookQuantityNegative:
+		return []byte(s), nil
+	case ProblemErrorPublisherNameRequired:
+		return []byte(s), nil
+	case ProblemErrorPublisherNameDuplicate:
+		return []byte(s), nil
+	case ProblemErrorBookDuplicate:
+		return []byte(s), nil
+	case ProblemErrorBookPublisherNotFound:
+		return []byte(s), nil
+	case ProblemErrorPublisherReferenced:
+		return []byte(s), nil
+	case ProblemErrorInvalidRequest:
+		return []byte(s), nil
+	case ProblemErrorInvalidJSON:
+		return []byte(s), nil
+	case ProblemErrorTrailingJSONData:
+		return []byte(s), nil
+	case ProblemErrorInvalidID:
+		return []byte(s), nil
+	case ProblemErrorInvalidAuthor:
+		return []byte(s), nil
+	case ProblemErrorInvalidName:
+		return []byte(s), nil
+	case ProblemErrorInvalidYear:
+		return []byte(s), nil
+	case ProblemErrorInvalidPrice:
+		return []byte(s), nil
+	case ProblemErrorInvalidPublisherID:
+		return []byte(s), nil
+	case ProblemErrorInvalidPublicationYear:
+		return []byte(s), nil
+	case ProblemErrorInvalidQuantity:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ProblemError) UnmarshalText(data []byte) error {
+	switch ProblemError(data) {
+	case ProblemErrorInvalidInput:
+		*s = ProblemErrorInvalidInput
+		return nil
+	case ProblemErrorConflict:
+		*s = ProblemErrorConflict
+		return nil
+	case ProblemErrorNotFound:
+		*s = ProblemErrorNotFound
+		return nil
+	case ProblemErrorInternalError:
+		*s = ProblemErrorInternalError
+		return nil
+	case ProblemErrorBookAuthorRequired:
+		*s = ProblemErrorBookAuthorRequired
+		return nil
+	case ProblemErrorBookNameRequired:
+		*s = ProblemErrorBookNameRequired
+		return nil
+	case ProblemErrorBookYearInvalid:
+		*s = ProblemErrorBookYearInvalid
+		return nil
+	case ProblemErrorBookPriceNegative:
+		*s = ProblemErrorBookPriceNegative
+		return nil
+	case ProblemErrorBookPublisherRequired:
+		*s = ProblemErrorBookPublisherRequired
+		return nil
+	case ProblemErrorBookPublicationYearInvalid:
+		*s = ProblemErrorBookPublicationYearInvalid
+		return nil
+	case ProblemErrorBookPublicationYearBeforeYear:
+		*s = ProblemErrorBookPublicationYearBeforeYear
+		return nil
+	case ProblemErrorBookQuantityNegative:
+		*s = ProblemErrorBookQuantityNegative
+		return nil
+	case ProblemErrorPublisherNameRequired:
+		*s = ProblemErrorPublisherNameRequired
+		return nil
+	case ProblemErrorPublisherNameDuplicate:
+		*s = ProblemErrorPublisherNameDuplicate
+		return nil
+	case ProblemErrorBookDuplicate:
+		*s = ProblemErrorBookDuplicate
+		return nil
+	case ProblemErrorBookPublisherNotFound:
+		*s = ProblemErrorBookPublisherNotFound
+		return nil
+	case ProblemErrorPublisherReferenced:
+		*s = ProblemErrorPublisherReferenced
+		return nil
+	case ProblemErrorInvalidRequest:
+		*s = ProblemErrorInvalidRequest
+		return nil
+	case ProblemErrorInvalidJSON:
+		*s = ProblemErrorInvalidJSON
+		return nil
+	case ProblemErrorTrailingJSONData:
+		*s = ProblemErrorTrailingJSONData
+		return nil
+	case ProblemErrorInvalidID:
+		*s = ProblemErrorInvalidID
+		return nil
+	case ProblemErrorInvalidAuthor:
+		*s = ProblemErrorInvalidAuthor
+		return nil
+	case ProblemErrorInvalidName:
+		*s = ProblemErrorInvalidName
+		return nil
+	case ProblemErrorInvalidYear:
+		*s = ProblemErrorInvalidYear
+		return nil
+	case ProblemErrorInvalidPrice:
+		*s = ProblemErrorInvalidPrice
+		return nil
+	case ProblemErrorInvalidPublisherID:
+		*s = ProblemErrorInvalidPublisherID
+		return nil
+	case ProblemErrorInvalidPublicationYear:
+		*s = ProblemErrorInvalidPublicationYear
+		return nil
+	case ProblemErrorInvalidQuantity:
+		*s = ProblemErrorInvalidQuantity
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Merged schema.

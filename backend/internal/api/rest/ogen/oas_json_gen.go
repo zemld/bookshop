@@ -533,7 +533,7 @@ func (s *Problem) Encode(e *jx.Encoder) {
 func (s *Problem) encodeFields(e *jx.Encoder) {
 	{
 		e.FieldStart("error")
-		e.Str(s.Error)
+		s.Error.Encode(e)
 	}
 }
 
@@ -553,9 +553,7 @@ func (s *Problem) Decode(d *jx.Decoder) error {
 		case "error":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				v, err := d.Str()
-				s.Error = string(v)
-				if err != nil {
+				if err := s.Error.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -614,6 +612,98 @@ func (s *Problem) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *Problem) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes ProblemError as json.
+func (s ProblemError) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes ProblemError from json.
+func (s *ProblemError) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ProblemError to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch ProblemError(v) {
+	case ProblemErrorInvalidInput:
+		*s = ProblemErrorInvalidInput
+	case ProblemErrorConflict:
+		*s = ProblemErrorConflict
+	case ProblemErrorNotFound:
+		*s = ProblemErrorNotFound
+	case ProblemErrorInternalError:
+		*s = ProblemErrorInternalError
+	case ProblemErrorBookAuthorRequired:
+		*s = ProblemErrorBookAuthorRequired
+	case ProblemErrorBookNameRequired:
+		*s = ProblemErrorBookNameRequired
+	case ProblemErrorBookYearInvalid:
+		*s = ProblemErrorBookYearInvalid
+	case ProblemErrorBookPriceNegative:
+		*s = ProblemErrorBookPriceNegative
+	case ProblemErrorBookPublisherRequired:
+		*s = ProblemErrorBookPublisherRequired
+	case ProblemErrorBookPublicationYearInvalid:
+		*s = ProblemErrorBookPublicationYearInvalid
+	case ProblemErrorBookPublicationYearBeforeYear:
+		*s = ProblemErrorBookPublicationYearBeforeYear
+	case ProblemErrorBookQuantityNegative:
+		*s = ProblemErrorBookQuantityNegative
+	case ProblemErrorPublisherNameRequired:
+		*s = ProblemErrorPublisherNameRequired
+	case ProblemErrorPublisherNameDuplicate:
+		*s = ProblemErrorPublisherNameDuplicate
+	case ProblemErrorBookDuplicate:
+		*s = ProblemErrorBookDuplicate
+	case ProblemErrorBookPublisherNotFound:
+		*s = ProblemErrorBookPublisherNotFound
+	case ProblemErrorPublisherReferenced:
+		*s = ProblemErrorPublisherReferenced
+	case ProblemErrorInvalidRequest:
+		*s = ProblemErrorInvalidRequest
+	case ProblemErrorInvalidJSON:
+		*s = ProblemErrorInvalidJSON
+	case ProblemErrorTrailingJSONData:
+		*s = ProblemErrorTrailingJSONData
+	case ProblemErrorInvalidID:
+		*s = ProblemErrorInvalidID
+	case ProblemErrorInvalidAuthor:
+		*s = ProblemErrorInvalidAuthor
+	case ProblemErrorInvalidName:
+		*s = ProblemErrorInvalidName
+	case ProblemErrorInvalidYear:
+		*s = ProblemErrorInvalidYear
+	case ProblemErrorInvalidPrice:
+		*s = ProblemErrorInvalidPrice
+	case ProblemErrorInvalidPublisherID:
+		*s = ProblemErrorInvalidPublisherID
+	case ProblemErrorInvalidPublicationYear:
+		*s = ProblemErrorInvalidPublicationYear
+	case ProblemErrorInvalidQuantity:
+		*s = ProblemErrorInvalidQuantity
+	default:
+		*s = ProblemError(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s ProblemError) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ProblemError) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

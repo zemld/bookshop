@@ -35,7 +35,6 @@ func TestCreatePublisher(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Arrange
 			repo := mocks.NewMockPublishers(t)
 			if tt.wantErr != shared.ErrInvalid {
 				repo.EXPECT().CreatePublisher(mock.Anything, normalized).Return(tt.want, tt.repoErr).Once()
@@ -43,10 +42,8 @@ func TestCreatePublisher(t *testing.T) {
 
 			s := Service{Repository: repo}
 
-			// Act
 			got, err := s.CreatePublisher(context.Background(), tt.input)
 
-			// Assert
 			if tt.wantErr == nil {
 				require.NoError(t, err)
 			} else {
@@ -85,7 +82,6 @@ func TestUpdatePublisher(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Arrange
 			repo := mocks.NewMockPublishers(t)
 			if tt.wantErr != shared.ErrInvalid {
 				repo.EXPECT().UpdatePublisher(mock.Anything, normalized).Return(tt.want, tt.repoErr).Once()
@@ -93,10 +89,8 @@ func TestUpdatePublisher(t *testing.T) {
 
 			s := Service{Repository: repo}
 
-			// Act
 			got, err := s.UpdatePublisher(context.Background(), tt.input)
 
-			// Assert
 			if tt.wantErr == nil {
 				require.NoError(t, err)
 			} else {
@@ -131,15 +125,12 @@ func TestListPublishers(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Arrange
 			repo := mocks.NewMockPublishers(t)
 			repo.EXPECT().ListPublishers(mock.Anything).Return(tt.want, tt.wantErr).Once()
 			s := Service{Repository: repo}
 
-			// Act
 			got, err := s.ListPublishers(context.Background())
 
-			// Assert
 			if tt.wantErr == nil {
 				require.NoError(t, err)
 			} else {
@@ -171,15 +162,12 @@ func TestGetPublisher(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Arrange
 			repo := mocks.NewMockPublishers(t)
 			repo.EXPECT().GetPublisher(mock.Anything, id).Return(tt.want, tt.wantErr).Once()
 			s := Service{Repository: repo}
 
-			// Act
 			got, err := s.GetPublisher(context.Background(), id)
 
-			// Assert
 			if tt.wantErr == nil {
 				require.NoError(t, err)
 			} else {
@@ -210,19 +198,22 @@ func TestDeletePublisher(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Arrange
 			repo := mocks.NewMockPublishers(t)
 			repo.EXPECT().DeletePublisher(mock.Anything, id).Return(tt.wantErr).Once()
 			s := Service{Repository: repo}
 
-			// Act
 			err := s.DeletePublisher(context.Background(), id)
 
-			// Assert
 			if tt.wantErr == nil {
 				require.NoError(t, err)
 			} else {
 				require.ErrorIs(t, err, tt.wantErr)
+
+				if tt.wantErr == shared.ErrConflict {
+					require.ErrorIs(t, err, entities.ErrReferenced)
+				} else {
+					require.NotErrorIs(t, err, entities.ErrReferenced)
+				}
 			}
 		})
 	}

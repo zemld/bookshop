@@ -60,12 +60,11 @@ func New() *fx.App {
 				if addr == "" {
 					addr = ":8081"
 				}
-				return web.NewHTTPServer(addr, handler.Routes())
+				return web.NewHTTPServer(addr, handler.CreateHandler())
 			},
 		),
 		fx.Invoke(func(lc fx.Lifecycle, server *web.HTTPServer, client *core.Client) {
 			lc.Append(fx.Hook{OnStop: func(context.Context) error { client.Stop(); return nil }})
-			// Hooks stop in reverse order: drain the server before closing transport.
 			lc.Append(fx.Hook{OnStart: server.Start, OnStop: server.Stop})
 		}),
 	)

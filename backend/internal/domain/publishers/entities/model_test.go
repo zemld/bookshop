@@ -8,6 +8,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestPublisherValidationReason(t *testing.T) {
+	p := Publisher{Name: " \t"}
+	err := p.Validate()
+	require.ErrorIs(t, err, shared.ErrInvalid)
+	require.ErrorIs(t, err, ErrNameRequired)
+}
+
 func TestPublisherValidate(t *testing.T) {
 	t.Parallel()
 
@@ -16,7 +23,7 @@ func TestPublisherValidate(t *testing.T) {
 		wantErr           error
 	}{
 		{"trimmed", " Publisher ", "Publisher", nil},
-		{"invalid", "  ", "", shared.ErrInvalid},
+		{"invalid", "  ", "", ErrNameRequired},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()

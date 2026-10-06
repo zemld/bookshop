@@ -143,7 +143,37 @@ components:
       type: object
       required: [error]
       properties:
-        error: { type: string }
+        error:
+          type: string
+          enum:
+              - invalid_input
+              - conflict
+              - not_found
+              - internal_error
+              - book_author_required
+              - book_name_required
+              - book_year_invalid
+              - book_price_negative
+              - book_publisher_required
+              - book_publication_year_invalid
+              - book_publication_year_before_year
+              - book_quantity_negative
+              - publisher_name_required
+              - publisher_name_duplicate
+              - book_duplicate
+              - book_publisher_not_found
+              - publisher_referenced
+              - invalid_request
+              - invalid_json
+              - trailing_json_data
+              - invalid_id
+              - invalid_author
+              - invalid_name
+              - invalid_year
+              - invalid_price
+              - invalid_publisher_id
+              - invalid_publication_year
+              - invalid_quantity
     Deleted:
       type: object
       required: [status]

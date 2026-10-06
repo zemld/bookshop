@@ -40,7 +40,7 @@ func TestBookMethods(t *testing.T) {
 				}
 				if tt.fail {
 					w.WriteHeader(400)
-					_, _ = w.Write([]byte(`{"error":"invalid"}`))
+					_, _ = w.Write([]byte(`{"error":"invalid_input"}`))
 				} else if tt.name == "list" {
 					_, _ = w.Write([]byte(`[{"id":"` + id.String() + `"}]`))
 				} else if tt.name != "delete" {
@@ -71,7 +71,7 @@ func TestBookMethods(t *testing.T) {
 				err = b.DeleteBook(ctx, id)
 			}
 			if tt.fail {
-				require.EqualError(t, err, "API 400: invalid")
+				require.EqualError(t, err, "API 400: invalid_input")
 			} else {
 				require.NoError(t, err)
 				if tt.name != "list" && tt.name != "delete" {

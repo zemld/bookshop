@@ -1,7 +1,7 @@
-// The server always returns a full document. Select #page for both successful
-// navigation and error responses, keeping the browser's native form fallback.
 document.addEventListener("htmx:beforeSwap", function (event) {
-  if (event.detail.xhr.status === 400) {
+  const xhr = event.detail.xhr;
+  const contentType = xhr.getResponseHeader("Content-Type") || "";
+  if (xhr.status >= 400 && xhr.status < 600 && contentType.includes("text/html")) {
     event.detail.shouldSwap = true;
     event.detail.isError = false;
   }

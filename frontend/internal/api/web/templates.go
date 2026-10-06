@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"net/http"
+	"net/url"
 
 	bookentities "bookshop/frontend/internal/domain/books/entities"
 	publisherentities "bookshop/frontend/internal/domain/publishers/entities"
@@ -13,6 +14,8 @@ type page struct {
 	Kind       pageKind
 	Title      string
 	Error      string
+	Fields     map[string]string
+	Form       url.Values
 	Publishers []publisherentities.Publisher
 	Books      []bookentities.Book
 	Publisher  publisherentities.Publisher
@@ -30,7 +33,7 @@ const (
 	errorPage
 )
 
-func render(w http.ResponseWriter, code int, data page) {
+func renderPage(w http.ResponseWriter, code int, data page) {
 	switch data.Kind {
 	case publishersPage, booksPage, publisherPage, bookPage, errorPage:
 	default:
@@ -38,7 +41,7 @@ func render(w http.ResponseWriter, code int, data page) {
 		return
 	}
 	var output bytes.Buffer
-	if err := document(data).Render(context.Background(), &output); err != nil {
+	if err := renderDocument(data).Render(context.Background(), &output); err != nil {
 		http.Error(w, "render page", http.StatusInternalServerError)
 		return
 	}
@@ -47,6 +50,7 @@ func render(w http.ResponseWriter, code int, data page) {
 	_, _ = output.WriteTo(w)
 }
 
-func fail(w http.ResponseWriter, err error) {
-	render(w, http.StatusBadRequest, page{Kind: errorPage, Title: "Ошибка", Error: err.Error()})
+func renderErrorPage(w http.ResponseWriter, err error) {
+	code, message, fields := classifyPublicError(err)
+	renderPage(w, code, page{Kind: errorPage, Title: "Ошибка", Error: message, Fields: fields})
 }

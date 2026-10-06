@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: database
+  namespace: bookshop
+data:
+  PGHOST: db
+  PGPORT: "5432"
+  PGUSER: bookshop
+  PGDATABASE: bookshop
+  PGSSLMODE: disable

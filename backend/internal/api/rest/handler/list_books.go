@@ -16,7 +16,7 @@ func (h Handler) ListBooks(ctx context.Context) ([]ogen.Book, error) {
 
 	result := make([]ogen.Book, 0, len(items))
 	for _, b := range items {
-		result = append(result, convert.ToOgenBook(b))
+		result = append(result, convert.ConvertToOgenBook(b))
 	}
 
 	return result, nil

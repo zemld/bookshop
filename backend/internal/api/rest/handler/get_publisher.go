@@ -14,7 +14,7 @@ func (h Handler) GetPublisher(ctx context.Context, params ogen.GetPublisherParam
 		return nil, fmt.Errorf("get publisher: %w", err)
 	}
 
-	value := convert.ToOgenPublisher(p)
+	value := convert.ConvertToOgenPublisher(p)
 
 	return &value, nil
 }

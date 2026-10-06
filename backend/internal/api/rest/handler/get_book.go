@@ -14,7 +14,7 @@ func (h Handler) GetBook(ctx context.Context, params ogen.GetBookParams) (*ogen.
 		return nil, fmt.Errorf("get book: %w", err)
 	}
 
-	value := convert.ToOgenBook(b)
+	value := convert.ConvertToOgenBook(b)
 
 	return &value, nil
 }

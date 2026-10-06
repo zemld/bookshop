@@ -37,7 +37,7 @@ func TestPublisherOperations(t *testing.T) {
 				require.Equal(t, "Имя", sent.Name)
 				if tt.fail {
 					w.WriteHeader(400)
-					_, _ = w.Write([]byte(`{"error":"bad"}`))
+					_, _ = w.Write([]byte(`{"error":"invalid_input"}`))
 					return
 				}
 				_, _ = w.Write([]byte(`{"id":"` + id.String() + `","name":"Имя"}`))
@@ -54,7 +54,7 @@ func TestPublisherOperations(t *testing.T) {
 				saved, err = s.UpdatePublisher(context.Background(), id, entities.Publisher{Name: " Имя "})
 			}
 			if tt.fail {
-				require.EqualError(t, err, "API 400: bad")
+				require.EqualError(t, err, "API 400: invalid_input")
 				return
 			}
 			require.NoError(t, err)
