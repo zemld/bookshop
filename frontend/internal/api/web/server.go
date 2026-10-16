@@ -12,10 +12,11 @@ type HTTPServer struct {
 	server   *http.Server
 	listener net.Listener
 	done     chan error
+	logger   *slog.Logger
 }
 
-func NewHTTPServer(addr string, handler http.Handler) *HTTPServer {
-	return &HTTPServer{server: &http.Server{Addr: addr, Handler: handler}}
+func NewHTTPServer(addr string, handler http.Handler, logger *slog.Logger) *HTTPServer {
+	return &HTTPServer{server: &http.Server{Addr: addr, Handler: handler}, logger: logger}
 }
 
 func (s *HTTPServer) Start(context.Context) error {
@@ -28,7 +29,7 @@ func (s *HTTPServer) Start(context.Context) error {
 	go func() {
 		err := s.server.Serve(listener)
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("web listener stopped", "event", "http.listener_failed", "address", s.server.Addr, "error", err)
+			s.logger.Error("web listener stopped", "event", "http.listener_failed", "address", s.server.Addr, "error", err)
 		}
 		s.done <- err
 	}()

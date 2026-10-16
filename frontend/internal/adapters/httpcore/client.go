@@ -9,8 +9,6 @@ import (
 	"net/http"
 	"strings"
 	"time"
-
-	"bookshop/frontend/internal/requestlog"
 )
 
 type Client struct {
@@ -32,7 +30,7 @@ func New(api string) *Client {
 		api: strings.TrimRight(api, "/"),
 		client: &http.Client{
 			Timeout:   10 * time.Second,
-			Transport: http.DefaultTransport.(*http.Transport).Clone(),
+			Transport: requestIDTransport{next: http.DefaultTransport.(*http.Transport).Clone()},
 		},
 	}
 }
@@ -58,9 +56,6 @@ func (c *Client) Request(ctx context.Context, method, path string, input, output
 	}
 	if input != nil {
 		req.Header.Set("Content-Type", "application/json")
-	}
-	if id := requestlog.ReadID(ctx); id != "" {
-		req.Header.Set("X-Request-ID", id)
 	}
 	res, err := c.client.Do(req)
 	if err != nil {

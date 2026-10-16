@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"bookshop/backend/internal/api/rest/ogen"
-	"bookshop/backend/internal/requestlog"
 
 	"github.com/ogen-go/ogen/ogenerrors"
 	"github.com/ogen-go/ogen/validate"
@@ -83,7 +82,7 @@ func decodeFieldCode(name string) (ogen.ProblemError, bool) {
 		return "", false
 	}
 }
-func New(handler ogen.Handler) http.Handler {
+func New(handler ogen.Handler, logger *slog.Logger) http.Handler {
 	server, err := ogen.NewServer(handler, ogen.WithErrorHandler(func(_ context.Context, w http.ResponseWriter, _ *http.Request, decodeErr error) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusBadRequest)
@@ -95,14 +94,14 @@ func New(handler ogen.Handler) http.Handler {
 		panic(err)
 	}
 
-	return requestlog.Wrap(server, func(r *http.Request) string {
+	return wrapAccess(server, func(r *http.Request) string {
 		route, ok := server.FindPath(r.Method, r.URL)
 		if !ok {
 			return ""
 		}
 
 		return route.PathPattern()
-	})
+	}, logger)
 }
 
 type Config struct {
@@ -113,17 +112,18 @@ type Server struct {
 	http     *http.Server
 	listener net.Listener
 	done     chan error
+	logger   *slog.Logger
 }
 
-func NewServer(lifecycle fx.Lifecycle, cfg Config, handler ogen.Handler) *Server {
-	s := newServer(cfg.Address, New(handler))
+func NewServer(lifecycle fx.Lifecycle, cfg Config, handler ogen.Handler, logger *slog.Logger) *Server {
+	s := newServer(cfg.Address, New(handler, logger), logger)
 	lifecycle.Append(fx.Hook{OnStart: s.Start, OnStop: s.Stop})
 
 	return s
 }
 
-func newServer(addr string, handler http.Handler) *Server {
-	return &Server{http: &http.Server{Addr: addr, Handler: handler}}
+func newServer(addr string, handler http.Handler, logger *slog.Logger) *Server {
+	return &Server{http: &http.Server{Addr: addr, Handler: handler}, logger: logger}
 }
 
 func (s *Server) Start(context.Context) error {
@@ -138,7 +138,7 @@ func (s *Server) Start(context.Context) error {
 	go func() {
 		err := s.http.Serve(listener)
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("api listener stopped", "event", "http.listener_failed", "address", s.http.Addr, "error", err)
+			s.logger.Error("api listener stopped", "event", "http.listener_failed", "address", s.http.Addr, "error", err)
 		}
 
 		s.done <- err

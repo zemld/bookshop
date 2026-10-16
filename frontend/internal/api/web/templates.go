@@ -50,8 +50,8 @@ func renderPage(w http.ResponseWriter, code int, data page) {
 	_, _ = output.WriteTo(w)
 }
 
-func renderErrorPage(w http.ResponseWriter, r *http.Request, err error) {
+func (s Server) renderErrorPage(w http.ResponseWriter, r *http.Request, err error) {
 	code, message, fields := classifyPublicError(err)
-	logUnexpectedError(r.Context(), code, err)
+	s.logUnexpectedError(r.Context(), code, err)
 	renderPage(w, code, page{Kind: errorPage, Title: "Ошибка", Error: message, Fields: fields})
 }

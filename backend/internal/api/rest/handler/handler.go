@@ -12,12 +12,13 @@ import (
 	"bookshop/backend/internal/domain/publishers"
 	publisherentities "bookshop/backend/internal/domain/publishers/entities"
 	"bookshop/backend/internal/domain/shared"
-	"bookshop/backend/internal/requestlog"
+	"bookshop/backend/internal/logcontext"
 )
 
 type Handler struct {
 	Books      books.Books
 	Publishers publishers.Publishers
+	Logger     *slog.Logger
 }
 
 var _ ogen.Handler = Handler{}
@@ -63,10 +64,10 @@ func identifyError(err error, category ogen.ProblemError) ogen.ProblemError {
 	return category
 }
 
-func (Handler) NewError(ctx context.Context, err error) *ogen.ErrorStatusCode {
+func (h Handler) NewError(ctx context.Context, err error) *ogen.ErrorStatusCode {
 	code, category := classifyError(err)
 	if code == http.StatusInternalServerError {
-		slog.ErrorContext(ctx, "request failed", append(requestlog.ReadAttributes(ctx),
+		h.Logger.ErrorContext(ctx, "request failed", append(logcontext.ReadAttributes(ctx),
 			"event", "http.request_failed", "status_code", code, "error", err)...)
 	}
 

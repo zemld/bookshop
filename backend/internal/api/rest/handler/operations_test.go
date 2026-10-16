@@ -2,6 +2,8 @@ package handler
 
 import (
 	"errors"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -175,9 +177,12 @@ func TestOperationsHTTP(t *testing.T) {
 			books := bookmocks.NewMockBooks(t)
 			publishers := publishermocks.NewMockPublishers(t)
 			tt.setup(books, publishers)
+
+			logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 			api := server.New(Handler{
 				Books: bookservice.Service{Repository: books}, Publishers: publisherservice.Service{Repository: publishers},
-			})
+				Logger: logger,
+			}, logger)
 
 			req := httptest.NewRequest(tt.method, tt.path, strings.NewReader(tt.body))
 			if tt.body != "" {

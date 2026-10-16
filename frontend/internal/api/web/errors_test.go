@@ -1,7 +1,11 @@
 package web
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -9,6 +13,7 @@ import (
 	"testing"
 
 	"bookshop/frontend/internal/adapters/httpcore"
+	"bookshop/frontend/internal/logcontext"
 
 	"github.com/stretchr/testify/require"
 )
@@ -115,6 +120,42 @@ func TestRenderUnknownBackendCodeWithoutExposingIt(t *testing.T) {
 			require.Contains(t, res.Body.String(), "Некорректный формат запроса.")
 			require.NotContains(t, res.Body.String(), "private SQL")
 			require.Contains(t, res.Body.String(), `value="Издательство"`)
+		})
+	}
+}
+
+func TestLogUnexpectedError(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		status int
+		cause  error
+		logged bool
+	}{
+		{name: "upstream failure", status: http.StatusBadGateway, cause: fmt.Errorf("list books: %w", &httpcore.APIError{StatusCode: http.StatusInternalServerError, Code: "internal_error"}), logged: true},
+		{name: "bad request", status: http.StatusBadRequest, cause: &httpcore.APIError{StatusCode: http.StatusBadRequest, Code: "invalid_input"}},
+		{name: "not found", status: http.StatusNotFound, cause: &httpcore.APIError{StatusCode: http.StatusNotFound, Code: "not_found"}},
+		{name: "conflict", status: http.StatusConflict, cause: &httpcore.APIError{StatusCode: http.StatusConflict, Code: "conflict"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var output bytes.Buffer
+			server := Server{Logger: slog.New(logcontext.NewHandler(slog.NewJSONHandler(&output, nil)))}
+			ctx := logcontext.StoreRequest(context.Background(), testID, http.MethodGet, "GET /books")
+			server.logUnexpectedError(ctx, tc.status, tc.cause)
+			if !tc.logged {
+				require.Empty(t, output.String())
+				return
+			}
+			var record map[string]any
+			require.NoError(t, json.Unmarshal(output.Bytes(), &record))
+			require.Equal(t, "http.request_failed", record["event"])
+			require.Equal(t, "ERROR", record["level"])
+			require.Equal(t, testID, record["request_id"])
+			require.Equal(t, "GET", record["method"])
+			require.Equal(t, "GET /books", record["route"])
+			require.Equal(t, float64(tc.status), record["status_code"])
+			require.Equal(t, float64(http.StatusInternalServerError), record["upstream_status_code"])
+			require.Equal(t, "internal_error", record["error_code"])
+			require.Contains(t, record["error"], "list books")
 		})
 	}
 }

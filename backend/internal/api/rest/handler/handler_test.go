@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"log/slog"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -21,7 +23,8 @@ import (
 )
 
 func TestRejectInvalidRequest(t *testing.T) {
-	api := server.New(Handler{Books: books.Service{}, Publishers: publishers.Service{}})
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	api := server.New(Handler{Books: books.Service{}, Publishers: publishers.Service{}, Logger: logger}, logger)
 
 	for _, tc := range []struct {
 		name, method, path, body, contentType, want string
@@ -49,7 +52,8 @@ func TestRejectInvalidRequest(t *testing.T) {
 }
 
 func TestValidationResponseForCreateAndUpdate(t *testing.T) {
-	api := server.New(Handler{Books: books.Service{}})
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	api := server.New(Handler{Books: books.Service{}, Logger: logger}, logger)
 
 	for _, path := range []struct{ method, path string }{
 		{"POST", "/books"}, {"PUT", "/books/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"},
@@ -72,7 +76,8 @@ func TestValidationResponseForCreateAndUpdate(t *testing.T) {
 }
 
 func TestDecodeFieldErrors(t *testing.T) {
-	api := server.New(Handler{})
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	api := server.New(Handler{Logger: logger}, logger)
 
 	for _, tc := range []struct{ body, want string }{
 		{`{"author":"A","name":"B"}`, "invalid_year"},
@@ -95,7 +100,8 @@ func TestDecodeFieldErrors(t *testing.T) {
 }
 
 func TestPublisherValidationResponseForCreateAndUpdate(t *testing.T) {
-	api := server.New(Handler{Publishers: publishers.Service{}})
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	api := server.New(Handler{Publishers: publishers.Service{}, Logger: logger}, logger)
 
 	for _, tc := range []struct{ method, path string }{
 		{"POST", "/publishers"},
@@ -137,7 +143,7 @@ func TestMapDomainAndDatabaseErrorsToProblem(t *testing.T) {
 		{"internal", errors.New("private database error"), 500, "internal_error"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			response := (Handler{}).NewError(context.Background(), fmt.Errorf("operation: %w", tc.err))
+			response := (Handler{Logger: slog.New(slog.NewTextHandler(io.Discard, nil))}).NewError(context.Background(), fmt.Errorf("operation: %w", tc.err))
 			require.Equal(t, tc.status, response.StatusCode)
 			require.Equal(t, tc.wireCode, string(response.Response.Error))
 		})

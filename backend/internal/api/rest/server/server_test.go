@@ -38,7 +38,7 @@ func TestStop(t *testing.T) {
 
 				_, _ = w.Write([]byte("done"))
 			})
-			s := newServer("127.0.0.1:0", handler)
+			s := newServer("127.0.0.1:0", handler, slog.New(slog.NewTextHandler(io.Discard, nil)))
 			require.NoError(t, s.Start(context.Background()))
 
 			defer func() { _ = s.http.Close() }()
@@ -78,37 +78,46 @@ func TestStop(t *testing.T) {
 	}
 }
 
-func TestStartRejectsOccupiedPort(t *testing.T) {
-	t.Parallel()
+func TestStart(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		occupied bool
+	}{
+		{name: "occupied port", occupied: true},
+		{name: "unexpected listener close"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var output bytes.Buffer
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err)
+			addr := "127.0.0.1:0"
+			if tc.occupied {
+				listener, err := net.Listen("tcp", addr)
+				require.NoError(t, err)
 
-	defer func() { require.NoError(t, listener.Close()) }()
+				defer func() { require.NoError(t, listener.Close()) }()
 
-	s := newServer(listener.Addr().String(), http.NotFoundHandler())
+				addr = listener.Addr().String()
+			}
 
-	err = s.Start(context.Background())
+			s := newServer(addr, http.NotFoundHandler(), slog.New(slog.NewJSONHandler(&output, nil)))
 
-	require.Error(t, err)
-}
+			err := s.Start(context.Background())
+			if tc.occupied {
+				require.Error(t, err)
+				require.Empty(t, output.String())
 
-func TestLogUnexpectedListenerStop(t *testing.T) {
-	var output bytes.Buffer
+				return
+			}
 
-	original := slog.Default()
+			require.NoError(t, err)
+			require.NoError(t, s.listener.Close())
+			require.Error(t, <-s.done)
 
-	slog.SetDefault(slog.New(slog.NewJSONHandler(&output, nil)))
-	t.Cleanup(func() { slog.SetDefault(original) })
-
-	s := newServer("127.0.0.1:0", http.NotFoundHandler())
-	require.NoError(t, s.Start(context.Background()))
-	require.NoError(t, s.listener.Close())
-	require.Error(t, <-s.done)
-
-	var record map[string]any
-	require.NoError(t, json.Unmarshal(output.Bytes(), &record))
-	require.Equal(t, "http.listener_failed", record["event"])
-	require.Equal(t, s.http.Addr, record["address"])
-	require.Equal(t, "ERROR", record["level"])
+			var record map[string]any
+			require.NoError(t, json.Unmarshal(output.Bytes(), &record))
+			require.Equal(t, "http.listener_failed", record["event"])
+			require.Equal(t, s.http.Addr, record["address"])
+			require.Equal(t, "ERROR", record["level"])
+		})
+	}
 }

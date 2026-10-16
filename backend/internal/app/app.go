@@ -14,6 +14,7 @@ import (
 	"bookshop/backend/internal/api/rest/server"
 	"bookshop/backend/internal/domain/books"
 	"bookshop/backend/internal/domain/publishers"
+	"bookshop/backend/internal/logcontext"
 	bookrepository "bookshop/backend/internal/ports/books"
 	publisherrepository "bookshop/backend/internal/ports/publishers"
 	bookservice "bookshop/backend/internal/services/books"
@@ -29,13 +30,28 @@ const (
 	_stopTimeout    = 12 * time.Second
 )
 
+type ServiceConfig struct {
+	Name string
+}
+
+func loadServiceConfig() ServiceConfig {
+	return ServiceConfig{Name: "bookshop-api"}
+}
+
+func provideLogger(cfg ServiceConfig) *slog.Logger {
+	return slog.New(logcontext.NewHandler(slog.NewJSONHandler(os.Stdout, nil).
+		WithAttrs([]slog.Attr{slog.String("service", cfg.Name)})))
+}
+
 func New() *fx.App {
 	return fx.New(
 		fx.StopTimeout(_stopTimeout),
-		fx.WithLogger(func() fxevent.Logger {
-			return &fxevent.SlogLogger{Logger: slog.Default()}
+		fx.WithLogger(func(logger *slog.Logger) fxevent.Logger {
+			return &fxevent.SlogLogger{Logger: logger}
 		}),
 		fx.Provide(
+			loadServiceConfig,
+			provideLogger,
 			provideDatabase,
 			loadServerConfig,
 			fx.Annotate(func(db *pgxpool.Pool) *bookstore.Store {
@@ -50,8 +66,8 @@ func New() *fx.App {
 			fx.Annotate(func(repo publisherrepository.Repository) *publisherservice.Service {
 				return &publisherservice.Service{Repository: repo}
 			}, fx.As(new(publishers.Publishers))),
-			fx.Annotate(func(books books.Books, publishers publishers.Publishers) handler.Handler {
-				return handler.Handler{Books: books, Publishers: publishers}
+			fx.Annotate(func(books books.Books, publishers publishers.Publishers, logger *slog.Logger) handler.Handler {
+				return handler.Handler{Books: books, Publishers: publishers, Logger: logger}
 			}, fx.As(new(ogen.Handler))),
 			server.NewServer,
 		),
