@@ -30,7 +30,7 @@ func New(api string) *Client {
 		api: strings.TrimRight(api, "/"),
 		client: &http.Client{
 			Timeout:   10 * time.Second,
-			Transport: http.DefaultTransport.(*http.Transport).Clone(),
+			Transport: requestIDTransport{next: http.DefaultTransport.(*http.Transport).Clone()},
 		},
 	}
 }

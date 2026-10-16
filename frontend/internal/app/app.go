@@ -13,6 +13,7 @@ import (
 	core "bookshop/frontend/internal/adapters/httpcore"
 	publisherhttp "bookshop/frontend/internal/adapters/publishers/http"
 	"bookshop/frontend/internal/api/web"
+	"bookshop/frontend/internal/logcontext"
 	bookports "bookshop/frontend/internal/ports/books"
 	publisherports "bookshop/frontend/internal/ports/publishers"
 	bookservice "bookshop/frontend/internal/services/books"
@@ -24,13 +25,28 @@ import (
 
 const stopTimeout = 12 * time.Second
 
-func New() *fx.App {
-	return fx.New(
+type ServiceConfig struct {
+	Name string
+}
+
+func loadServiceConfig() ServiceConfig {
+	return ServiceConfig{Name: "bookshop-web"}
+}
+
+func provideLogger(cfg ServiceConfig) *slog.Logger {
+	return slog.New(logcontext.NewHandler(slog.NewJSONHandler(os.Stdout, nil).
+		WithAttrs([]slog.Attr{slog.String("service", cfg.Name)})))
+}
+
+func New(options ...fx.Option) *fx.App {
+	return fx.New(append([]fx.Option{
 		fx.StopTimeout(stopTimeout),
-		fx.WithLogger(func() fxevent.Logger {
-			return &fxevent.SlogLogger{Logger: slog.Default()}
+		fx.WithLogger(func(logger *slog.Logger) fxevent.Logger {
+			return &fxevent.SlogLogger{Logger: logger}
 		}),
 		fx.Provide(
+			loadServiceConfig,
+			provideLogger,
 			func() (*core.Client, error) {
 				endpoint := os.Getenv("API_URL")
 				if endpoint == "" {
@@ -48,40 +64,50 @@ func New() *fx.App {
 			func(p publisherports.Publishers) *publisherservice.Service {
 				return &publisherservice.Service{Publishers: p}
 			},
-			func(b bookports.Books, p publisherports.Publishers, bs *bookservice.Service, ps *publisherservice.Service) web.Server {
+			func(b bookports.Books, p publisherports.Publishers, bs *bookservice.Service, ps *publisherservice.Service, logger *slog.Logger) web.Server {
 				return web.Server{
 					Books: b, DeleteBook: b, Publishers: p, GetPublisher: p, DeletePublisher: p,
 					LoadBookForm: bs, CreateBook: b, UpdateBook: b,
 					CreatePublisher: ps, UpdatePublisher: ps,
+					Logger: logger,
 				}
 			},
-			func(handler web.Server) *web.HTTPServer {
+			func(handler web.Server, logger *slog.Logger) *web.HTTPServer {
 				addr := os.Getenv("WEB_ADDR")
 				if addr == "" {
 					addr = ":8081"
 				}
-				return web.NewHTTPServer(addr, handler.CreateHandler())
+				return web.NewHTTPServer(addr, handler.CreateHandler(), logger)
 			},
 		),
 		fx.Invoke(func(lc fx.Lifecycle, server *web.HTTPServer, client *core.Client) {
 			lc.Append(fx.Hook{OnStop: func(context.Context) error { client.Stop(); return nil }})
 			lc.Append(fx.Hook{OnStart: server.Start, OnStop: server.Stop})
 		}),
-	)
+	}, options...)...)
 }
 
 func Run() error {
-	application := New()
+	var logger *slog.Logger
+	application := New(fx.Populate(&logger))
 	if err := application.Err(); err != nil {
+		if logger != nil {
+			logger.Error("web stopped", "event", "web.run_failed", "error", err)
+		}
 		return err
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	if err := application.Start(ctx); err != nil {
+		logger.Error("web stopped", "event", "web.run_failed", "error", err)
 		return err
 	}
 	<-ctx.Done()
 	drain, cancel := context.WithTimeout(context.Background(), stopTimeout)
 	defer cancel()
-	return application.Stop(drain)
+	if err := application.Stop(drain); err != nil {
+		logger.Error("web stopped", "event", "web.run_failed", "error", err)
+		return err
+	}
+	return nil
 }

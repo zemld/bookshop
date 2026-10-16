@@ -1,11 +1,12 @@
 package web
 
 import (
+	"context"
 	"errors"
-	"log/slog"
 	"net/http"
 
 	"bookshop/frontend/internal/adapters/httpcore"
+	"bookshop/frontend/internal/logcontext"
 )
 
 type errorDescription struct {
@@ -75,12 +76,24 @@ func classifyPublicError(err error) (int, string, map[string]string) {
 			return http.StatusNotFound, errorDescriptions["not_found"].Message, nil
 		}
 	}
-	slog.Error("web request failed", "error", err)
 	return http.StatusBadGateway, errorDescriptions["internal_error"].Message, nil
 }
 
-func renderFormError(w http.ResponseWriter, err error, data page) {
+func (s Server) logUnexpectedError(ctx context.Context, code int, err error) {
+	if code < http.StatusInternalServerError {
+		return
+	}
+	attrs := append(logcontext.ReadAttributes(ctx), "event", "http.request_failed", "status_code", code, "error", err)
+	var apiError *httpcore.APIError
+	if errors.As(err, &apiError) {
+		attrs = append(attrs, "upstream_status_code", apiError.StatusCode, "error_code", apiError.Code)
+	}
+	s.Logger.ErrorContext(ctx, "web request failed", attrs...)
+}
+
+func (s Server) renderFormError(w http.ResponseWriter, r *http.Request, err error, data page) {
 	code, message, fields := classifyPublicError(err)
+	s.logUnexpectedError(r.Context(), code, err)
 	data.Error = message
 	data.Fields = fields
 	renderPage(w, code, data)

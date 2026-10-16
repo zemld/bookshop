@@ -2,6 +2,8 @@ package web
 
 import (
 	"encoding/json"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -26,7 +28,8 @@ func createTestHandler(apiURL string) http.Handler {
 	bs := &bookservice.Service{Books: b, Publishers: p}
 	ps := &publisherservice.Service{Publishers: p}
 	return (Server{
-		Books: b, DeleteBook: b, Publishers: p, GetPublisher: p, DeletePublisher: p,
+		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Books:  b, DeleteBook: b, Publishers: p, GetPublisher: p, DeletePublisher: p,
 		LoadBookForm: bs, CreateBook: b, UpdateBook: b,
 		CreatePublisher: ps, UpdatePublisher: ps,
 	}).CreateHandler()

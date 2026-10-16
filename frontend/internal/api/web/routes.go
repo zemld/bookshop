@@ -1,6 +1,7 @@
 package web
 
 import (
+	"log/slog"
 	"net/http"
 
 	"bookshop/frontend/internal/domain/books"
@@ -10,6 +11,7 @@ import (
 )
 
 type Server struct {
+	Logger          *slog.Logger
 	Books           bookports.ListBooks
 	DeleteBook      bookports.DeleteBook
 	Publishers      publisherports.ListPublishers
@@ -30,5 +32,8 @@ func (s Server) CreateHandler() http.Handler {
 	})
 	s.registerPublisherRoutes(m)
 	s.registerBookRoutes(m)
-	return m
+	return wrapAccess(m, func(r *http.Request) string {
+		_, pattern := m.Handler(r)
+		return pattern
+	}, s.Logger)
 }
