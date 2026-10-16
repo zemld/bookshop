@@ -1,0 +1,19 @@
+server:
+  fullnameOverride: victoria-logs
+  replicaCount: 1
+  retentionPeriod: 3d
+  retentionDiskSpaceUsage: 1GiB
+  persistentVolume:
+    enabled: true
+    size: 2Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  service:
+    type: ClusterIP
+  ingress:
+    enabled: false
