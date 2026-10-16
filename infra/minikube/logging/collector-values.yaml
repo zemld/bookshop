@@ -2,7 +2,7 @@ fullnameOverride: victoria-logs-collector
 
 remoteWrite:
   - url: http://victoria-logs:9428
-    maxDiskUsagePerURL: 512MiB
+    maxDiskUsagePerURL: 513MiB
 
 collector:
   excludeFilter: 'NOT kubernetes.pod_namespace:=bookshop'
