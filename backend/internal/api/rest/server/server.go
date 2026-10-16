@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"bookshop/backend/internal/api/middleware"
 	"bookshop/backend/internal/api/rest/ogen"
 
 	"github.com/ogen-go/ogen/ogenerrors"
@@ -88,18 +89,18 @@ func New(handler ogen.Handler, logger *slog.Logger) http.Handler {
 		err    error
 	)
 
-	server, err = ogen.NewServer(handler, ogen.WithMiddleware(logRequests(&server, handler, logger)), ogen.WithErrorHandler(func(_ context.Context, w http.ResponseWriter, r *http.Request, decodeErr error) {
-		w.Header().Set(_requestIDHeader, getRequestID(r.Header).String())
+	server, err = ogen.NewServer(handler, ogen.WithMiddleware(middleware.NewRequestLoggingMiddleware(&server, handler, logger)), ogen.WithErrorHandler(func(_ context.Context, w http.ResponseWriter, r *http.Request, decodeErr error) {
+		w.Header().Set(middleware.RequestIDHeader, middleware.GetRequestID(r.Header).String())
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusBadRequest)
 
 		problem := decodeProblem(decodeErr)
 		_ = json.NewEncoder(w).Encode(&problem)
 	}), ogen.WithNotFound(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set(_requestIDHeader, getRequestID(r.Header).String())
+		w.Header().Set(middleware.RequestIDHeader, middleware.GetRequestID(r.Header).String())
 		http.NotFound(w, r)
 	}), ogen.WithMethodNotAllowed(func(w http.ResponseWriter, r *http.Request, allowed string) {
-		w.Header().Set(_requestIDHeader, getRequestID(r.Header).String())
+		w.Header().Set(middleware.RequestIDHeader, middleware.GetRequestID(r.Header).String())
 
 		if r.Method == http.MethodOptions {
 			w.Header().Set("Access-Control-Allow-Methods", allowed)

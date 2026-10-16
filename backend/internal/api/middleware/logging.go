@@ -1,4 +1,4 @@
-package server
+package middleware
 
 import (
 	"context"
@@ -12,15 +12,15 @@ import (
 	"github.com/ogen-go/ogen/middleware"
 )
 
-const _requestIDHeader = "X-Request-ID"
+const RequestIDHeader = "X-Request-ID"
 
 type requestIDKey struct{}
 
-func logRequests(server **ogen.Server, handler ogen.Handler, logger *slog.Logger) ogen.Middleware {
+func NewRequestLoggingMiddleware(server **ogen.Server, handler ogen.Handler, logger *slog.Logger) ogen.Middleware {
 	return func(req middleware.Request, next middleware.Next) (middleware.Response, error) {
 		started := time.Now()
 
-		id := getRequestID(req.Raw.Header)
+		id := GetRequestID(req.Raw.Header)
 
 		req.SetContext(context.WithValue(req.Context, requestIDKey{}, id))
 		route, _ := (*server).FindPath(req.Raw.Method, req.Raw.URL)
@@ -68,8 +68,8 @@ func logRequests(server **ogen.Server, handler ogen.Handler, logger *slog.Logger
 	}
 }
 
-func getRequestID(header http.Header) uuid.UUID {
-	id, err := uuid.Parse(header.Get(_requestIDHeader))
+func GetRequestID(header http.Header) uuid.UUID {
+	id, err := uuid.Parse(header.Get(RequestIDHeader))
 	if err != nil {
 		return uuid.New()
 	}
