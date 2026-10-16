@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"bookshop/frontend/internal/adapters/httpcore"
-	"bookshop/frontend/internal/requestlog"
 
 	"github.com/stretchr/testify/require"
 )
@@ -126,7 +125,7 @@ func TestRenderUnknownBackendCodeWithoutExposingIt(t *testing.T) {
 func TestLogUnexpectedError(t *testing.T) {
 	var output bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&output, nil))
-	ctx := requestlog.WithDetails(context.Background(), requestlog.Details{ID: testID, Method: "POST", Route: "POST /books"})
+	ctx := withRequest(context.Background(), testID, "POST", "POST /books")
 	for _, err := range []error{
 		&httpcore.APIError{StatusCode: 400, Code: "invalid_input"},
 		&httpcore.APIError{StatusCode: 404, Code: "not_found"},

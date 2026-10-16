@@ -12,7 +12,7 @@ import (
 	"bookshop/backend/internal/api/rest/handler"
 	"bookshop/backend/internal/api/rest/ogen"
 	"bookshop/backend/internal/api/rest/server"
-	"bookshop/backend/internal/appconfig"
+	"bookshop/backend/internal/config"
 	"bookshop/backend/internal/domain/books"
 	"bookshop/backend/internal/domain/publishers"
 	bookrepository "bookshop/backend/internal/ports/books"
@@ -38,8 +38,8 @@ func New() *fx.App {
 		}),
 		fx.Provide(
 			provideDatabase,
-			func() appconfig.ServiceConfig { return appconfig.ServiceConfig{Name: "bookshop-api"} },
-			func(cfg appconfig.ServiceConfig) *slog.Logger {
+			func() config.ServiceConfig { return config.ServiceConfig{Name: "bookshop-api"} },
+			func(cfg config.ServiceConfig) *slog.Logger {
 				return slog.New(slog.NewJSONHandler(os.Stdout, nil)).With("service", cfg.Name)
 			},
 			loadServerConfig,

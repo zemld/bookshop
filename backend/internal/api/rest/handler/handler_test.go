@@ -10,11 +10,11 @@ import (
 	"strings"
 	"testing"
 
+	"bookshop/backend/internal/api/rest/handler/requestcontext"
 	"bookshop/backend/internal/api/rest/server"
 	bookentities "bookshop/backend/internal/domain/books/entities"
 	publisherentities "bookshop/backend/internal/domain/publishers/entities"
 	"bookshop/backend/internal/domain/shared"
-	"bookshop/backend/internal/requestlog"
 	"bookshop/backend/internal/services/books"
 	"bookshop/backend/internal/services/publishers"
 	"bookshop/backend/internal/utils/postgreserrors"
@@ -24,7 +24,7 @@ import (
 )
 
 func TestRejectInvalidRequest(t *testing.T) {
-	api := server.New(Handler{Books: books.Service{}, Publishers: publishers.Service{}})
+	api := server.New(Handler{Books: books.Service{}, Publishers: publishers.Service{}}, nil)
 
 	for _, tc := range []struct {
 		name, method, path, body, contentType, want string
@@ -52,7 +52,7 @@ func TestRejectInvalidRequest(t *testing.T) {
 }
 
 func TestValidationResponseForCreateAndUpdate(t *testing.T) {
-	api := server.New(Handler{Books: books.Service{}})
+	api := server.New(Handler{Books: books.Service{}}, nil)
 
 	for _, path := range []struct{ method, path string }{
 		{"POST", "/books"}, {"PUT", "/books/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"},
@@ -75,7 +75,7 @@ func TestValidationResponseForCreateAndUpdate(t *testing.T) {
 }
 
 func TestDecodeFieldErrors(t *testing.T) {
-	api := server.New(Handler{})
+	api := server.New(Handler{}, nil)
 
 	for _, tc := range []struct{ body, want string }{
 		{`{"author":"A","name":"B"}`, "invalid_year"},
@@ -98,7 +98,7 @@ func TestDecodeFieldErrors(t *testing.T) {
 }
 
 func TestPublisherValidationResponseForCreateAndUpdate(t *testing.T) {
-	api := server.New(Handler{Publishers: publishers.Service{}})
+	api := server.New(Handler{Publishers: publishers.Service{}}, nil)
 
 	for _, tc := range []struct{ method, path string }{
 		{"POST", "/publishers"},
@@ -143,7 +143,7 @@ func TestMapDomainAndDatabaseErrorsToProblem(t *testing.T) {
 			var output bytes.Buffer
 
 			logger := slog.New(slog.NewJSONHandler(&output, nil))
-			ctx := requestlog.WithDetails(context.Background(), requestlog.Details{ID: "request", Method: "GET", Route: "/books/{id}"})
+			ctx := requestcontext.WithRequest(context.Background(), "request", "GET", "/books/{id}")
 			response := (Handler{Logger: logger}).NewError(ctx, fmt.Errorf("operation: %w", tc.err))
 			require.Equal(t, tc.status, response.StatusCode)
 			require.Equal(t, tc.wireCode, string(response.Response.Error))

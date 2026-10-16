@@ -9,8 +9,6 @@ import (
 	"net/http"
 	"strings"
 	"time"
-
-	"bookshop/frontend/internal/requestlog"
 )
 
 type Client struct {
@@ -32,7 +30,7 @@ func New(api string) *Client {
 		api: strings.TrimRight(api, "/"),
 		client: &http.Client{
 			Timeout:   10 * time.Second,
-			Transport: requestlog.Transport{Next: http.DefaultTransport.(*http.Transport).Clone()},
+			Transport: requestIDTransport{next: http.DefaultTransport.(*http.Transport).Clone()},
 		},
 	}
 }

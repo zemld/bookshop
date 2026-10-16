@@ -11,7 +11,6 @@ import (
 	"bookshop/frontend/internal/adapters/httpcore"
 	publisherhttp "bookshop/frontend/internal/adapters/publishers/http"
 	"bookshop/frontend/internal/domain/books/entities"
-	"bookshop/frontend/internal/requestlog"
 
 	"github.com/stretchr/testify/require"
 )
@@ -25,7 +24,7 @@ func TestRenderBookFormError(t *testing.T) {
 	var output bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&output, nil))
 	s := Server{Publishers: &publisherhttp.Client{Core: httpcore.New(api.URL)}, Logger: logger}
-	ctx := requestlog.WithDetails(context.Background(), requestlog.Details{ID: testID, Method: "POST", Route: "POST /books"})
+	ctx := withRequest(context.Background(), testID, "POST", "POST /books")
 	req := httptest.NewRequest("POST", "/books", nil).WithContext(ctx)
 	res := httptest.NewRecorder()
 	s.renderBookFormError(res, req, entities.Book{}, errInvalidForm)

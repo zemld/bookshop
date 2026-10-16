@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"bookshop/frontend/internal/domain/books/entities"
-	"bookshop/frontend/internal/requestlog"
 )
 
 func (s Server) registerBookRoutes(m *http.ServeMux) {
@@ -14,7 +13,7 @@ func (s Server) registerBookRoutes(m *http.ServeMux) {
 			s.renderErrorPage(w, r, err)
 			return
 		}
-		renderPage(w, 200, page{Kind: booksPage, Title: "Книги", Books: items})
+		renderPage(w, http.StatusOK, page{Kind: booksPage, Title: "Книги", Books: items})
 	})
 	m.HandleFunc("GET /books/new", func(w http.ResponseWriter, r *http.Request) {
 		publishers, err := s.Publishers.ListPublishers(r.Context())
@@ -22,7 +21,7 @@ func (s Server) registerBookRoutes(m *http.ServeMux) {
 			s.renderErrorPage(w, r, err)
 			return
 		}
-		renderPage(w, 200, page{Kind: bookPage, Title: "Книга", Publishers: publishers, New: true})
+		renderPage(w, http.StatusOK, page{Kind: bookPage, Title: "Книга", Publishers: publishers, New: true})
 	})
 	m.HandleFunc("GET /books/{id}", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseRouteID(r.PathValue("id"))
@@ -35,7 +34,7 @@ func (s Server) registerBookRoutes(m *http.ServeMux) {
 			s.renderErrorPage(w, r, err)
 			return
 		}
-		renderPage(w, 200, page{Kind: bookPage, Title: "Книга", Publishers: form.Publishers, Book: form.Book})
+		renderPage(w, http.StatusOK, page{Kind: bookPage, Title: "Книга", Publishers: form.Publishers, Book: form.Book})
 	})
 	m.HandleFunc("POST /books", s.saveBook)
 	m.HandleFunc("POST /books/{id}", s.saveBook)
@@ -96,7 +95,7 @@ func (s Server) renderBookFormError(w http.ResponseWriter, r *http.Request, book
 	if loadErr != nil {
 		if s.Logger != nil {
 			s.Logger.ErrorContext(r.Context(), "failed to reload publishers for book form",
-				append(append([]any{"event", "book_form.publishers_load_failed"}, requestlog.BuildAttributes(r.Context())...), "error", loadErr)...)
+				append(append([]any{"event", "book_form.publishers_load_failed"}, buildRequestAttributes(r.Context())...), "error", loadErr)...)
 		}
 		logUnexpectedError(r.Context(), s.Logger, err)
 		code, message, fields := classifyPublicError(err)

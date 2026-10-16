@@ -10,8 +10,6 @@ import (
 	"sync"
 	"testing"
 
-	"bookshop/frontend/internal/requestlog"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
@@ -50,7 +48,7 @@ func TestLogRequests(t *testing.T) {
 		{name: "concurrent IDs", run: func(t *testing.T) {
 			concurrentMux := http.NewServeMux()
 			concurrentMux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-				require.Equal(t, w.Header().Get("X-Request-ID"), requestlog.GetDetails(r.Context()).ID)
+				require.Equal(t, w.Header().Get("X-Request-ID"), r.Context().Value(requestKey{}).(requestInfo).id)
 			})
 			concurrentHandler := logRequests(concurrentMux, slog.New(slog.NewJSONHandler(io.Discard, nil)))
 			var wg sync.WaitGroup
@@ -123,12 +121,69 @@ func TestLogRequests(t *testing.T) {
 	}
 }
 
-func TestWrapStatusWriter(t *testing.T) {
-	recorder := httptest.NewRecorder()
-	status := &statusWriter{ResponseWriter: recorder}
-	wrapped := wrapStatusWriter(status)
-	require.NoError(t, http.NewResponseController(wrapped).Flush())
-	wrapped.WriteHeader(http.StatusInternalServerError)
-	require.Equal(t, http.StatusOK, recorder.Code)
-	require.Equal(t, http.StatusOK, status.status)
+func TestResponseRecorder(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		run  func(http.ResponseWriter)
+		want int
+	}{
+		{"empty response", func(http.ResponseWriter) {}, http.StatusOK},
+		{"implicit write", func(w http.ResponseWriter) { _, _ = w.Write([]byte("ok")) }, http.StatusOK},
+		{"informational then error", func(w http.ResponseWriter) {
+			w.WriteHeader(http.StatusEarlyHints)
+			w.WriteHeader(http.StatusBadRequest)
+		}, http.StatusBadRequest},
+		{"explicit error", func(w http.ResponseWriter) { w.WriteHeader(http.StatusInternalServerError) }, http.StatusInternalServerError},
+		{"flush then error", func(w http.ResponseWriter) {
+			require.NoError(t, http.NewResponseController(w).Flush())
+			w.WriteHeader(http.StatusInternalServerError)
+		}, http.StatusOK},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			status := &responseRecorder{ResponseWriter: recorder}
+			tc.run(status)
+			require.Equal(t, tc.want, status.getStatusCode())
+			if tc.name != "empty response" && tc.name != "informational then error" {
+				require.Equal(t, tc.want, recorder.Code)
+			}
+		})
+	}
+}
+
+func TestLogRequestsForAssets(t *testing.T) {
+	var output bytes.Buffer
+	handler := (Server{Logger: slog.New(slog.NewJSONHandler(&output, nil))}).CreateHandler()
+	for _, tc := range []struct {
+		name, path, header, value string
+		status                    int
+		logged                    bool
+	}{
+		{"existing", "/assets/site.css", "", "", http.StatusOK, false},
+		{"conditional", "/assets/site.css", "If-None-Match", "*", http.StatusNotModified, false},
+		{"partial", "/assets/site.css", "Range", "bytes=0-3", http.StatusPartialContent, false},
+		{"missing", "/assets/missing.css", "", "", http.StatusNotFound, true},
+		{"invalid range", "/assets/site.css", "Range", "bytes=999999999-", http.StatusRequestedRangeNotSatisfiable, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			output.Reset()
+			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+			if tc.header != "" {
+				req.Header.Set(tc.header, tc.value)
+			}
+			res := httptest.NewRecorder()
+			handler.ServeHTTP(res, req)
+			require.Equal(t, tc.status, res.Code)
+			_, err := uuid.Parse(res.Header().Get("X-Request-ID"))
+			require.NoError(t, err)
+			if !tc.logged {
+				require.Empty(t, output.String())
+				return
+			}
+			var record map[string]any
+			require.NoError(t, json.Unmarshal(output.Bytes(), &record))
+			require.Equal(t, float64(tc.status), record["status_code"])
+			require.Equal(t, "GET /assets/", record["route"])
+		})
+	}
 }

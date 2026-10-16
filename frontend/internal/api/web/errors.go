@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"bookshop/frontend/internal/adapters/httpcore"
-	"bookshop/frontend/internal/requestlog"
 )
 
 type errorDescription struct {
@@ -86,7 +85,7 @@ func logUnexpectedError(ctx context.Context, logger *slog.Logger, err error) {
 		if logger == nil {
 			return
 		}
-		attrs := append([]any{"event", "http.request_failed"}, requestlog.BuildAttributes(ctx)...)
+		attrs := append([]any{"event", "http.request_failed"}, buildRequestAttributes(ctx)...)
 		var apiError *httpcore.APIError
 		if errors.As(err, &apiError) {
 			attrs = append(attrs, "upstream_status_code", apiError.StatusCode, "error_code", apiError.Code)

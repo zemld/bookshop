@@ -6,17 +6,19 @@ import (
 	"net/http"
 	"time"
 
+	"bookshop/backend/internal/api/rest/handler/requestcontext"
 	"bookshop/backend/internal/api/rest/ogen"
-	"bookshop/backend/internal/requestlog"
 
 	"github.com/google/uuid"
 )
 
+const requestIDHeader = "X-Request-ID"
+
 func logRequests(next *ogen.Server, logger *slog.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		started := time.Now()
-		id := r.Header.Get(requestlog.Header)
 
+		id := r.Header.Get(requestIDHeader)
 		if _, err := uuid.Parse(id); err != nil {
 			id = uuid.NewString()
 		}
@@ -26,38 +28,33 @@ func logRequests(next *ogen.Server, logger *slog.Logger) http.Handler {
 			route = matched.PathPattern()
 		}
 
-		ctx := requestlog.WithDetails(r.Context(), requestlog.Details{ID: id, Method: r.Method, Route: route})
-		w.Header().Set(requestlog.Header, id)
-		recorder := &statusWriter{ResponseWriter: w}
-		next.ServeHTTP(wrapStatusWriter(recorder), r.WithContext(ctx))
-
-		status := recorder.status
-		if status == 0 {
-			status = http.StatusOK
-		}
+		ctx := requestcontext.WithRequest(r.Context(), id, r.Method, route)
+		w.Header().Set(requestIDHeader, id)
+		recorder := &responseRecorder{ResponseWriter: w}
+		next.ServeHTTP(recorder, r.WithContext(ctx))
 
 		if logger != nil {
 			logger.InfoContext(ctx, "http request completed",
-				append(append([]any{"event", "http.request_completed"}, requestlog.BuildAttributes(ctx)...),
-					"status_code", status, "duration_ms", float64(time.Since(started))/float64(time.Millisecond))...)
+				append(append([]any{"event", "http.request_completed"}, requestcontext.BuildAttributes(ctx)...),
+					"status_code", recorder.getStatusCode(), "duration_ms", float64(time.Since(started))/float64(time.Millisecond))...)
 		}
 	})
 }
 
-type statusWriter struct {
+type responseRecorder struct {
 	http.ResponseWriter
 	status int
 }
 
-func (w *statusWriter) WriteHeader(status int) {
-	if w.status == 0 && status >= 200 {
+func (w *responseRecorder) WriteHeader(status int) {
+	if w.status == 0 && status >= http.StatusOK {
 		w.status = status
 	}
 
 	w.ResponseWriter.WriteHeader(status)
 }
 
-func (w *statusWriter) Write(data []byte) (int, error) {
+func (w *responseRecorder) Write(data []byte) (int, error) {
 	if w.status == 0 {
 		w.status = http.StatusOK
 	}
@@ -70,106 +67,26 @@ func (w *statusWriter) Write(data []byte) (int, error) {
 	return n, nil
 }
 
-func (w *statusWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
+func (w *responseRecorder) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
+}
 
-func (w *statusWriter) recordFlush() {
+func (w *responseRecorder) FlushError() error {
 	if w.status == 0 {
 		w.status = http.StatusOK
 	}
-}
 
-type flushingWriter struct {
-	*statusWriter
-	http.Flusher
-}
-
-func (w flushingWriter) Flush() {
-	w.recordFlush()
-	w.Flusher.Flush()
-}
-
-type hijackingWriter struct {
-	*statusWriter
-	http.Hijacker
-}
-
-type flushingHijackingWriter struct {
-	*statusWriter
-	http.Flusher
-	http.Hijacker
-}
-
-func (w flushingHijackingWriter) Flush() {
-	w.recordFlush()
-	w.Flusher.Flush()
-}
-
-type pushingWriter struct {
-	*statusWriter
-	http.Pusher
-}
-
-type flushingPushingWriter struct {
-	*statusWriter
-	http.Flusher
-	http.Pusher
-}
-
-func (w flushingPushingWriter) Flush() {
-	w.recordFlush()
-	w.Flusher.Flush()
-}
-
-type hijackingPushingWriter struct {
-	*statusWriter
-	http.Hijacker
-	http.Pusher
-}
-
-type flushingHijackingPushingWriter struct {
-	*statusWriter
-	http.Flusher
-	http.Hijacker
-	http.Pusher
-}
-
-func (w flushingHijackingPushingWriter) Flush() {
-	w.recordFlush()
-	w.Flusher.Flush()
-}
-
-func wrapStatusWriter(w *statusWriter) http.ResponseWriter {
-	flusher, flushes := w.ResponseWriter.(http.Flusher)
-	hijacker, hijacks := w.ResponseWriter.(http.Hijacker)
-	pusher, pushes := w.ResponseWriter.(http.Pusher)
-
-	if flushes {
-		if hijacks {
-			if pushes {
-				return flushingHijackingPushingWriter{w, flusher, hijacker, pusher}
-			}
-
-			return flushingHijackingWriter{w, flusher, hijacker}
-		}
-
-		if pushes {
-			return flushingPushingWriter{w, flusher, pusher}
-		}
-
-		return flushingWriter{w, flusher}
+	if err := http.NewResponseController(w.ResponseWriter).Flush(); err != nil {
+		return fmt.Errorf("flush HTTP response: %w", err)
 	}
 
-	if hijacks {
-		if pushes {
-			return hijackingPushingWriter{w, hijacker, pusher}
-		}
+	return nil
+}
 
-		return hijackingWriter{w, hijacker}
+func (w *responseRecorder) getStatusCode() int {
+	if w.status == 0 {
+		return http.StatusOK
 	}
 
-	if pushes {
-		return pushingWriter{w, pusher}
-	}
-
-	return w
+	return w.status
 }

@@ -6,13 +6,13 @@ import (
 	"log/slog"
 	"net/http"
 
+	"bookshop/backend/internal/api/rest/handler/requestcontext"
 	"bookshop/backend/internal/api/rest/ogen"
 	"bookshop/backend/internal/domain/books"
 	bookentities "bookshop/backend/internal/domain/books/entities"
 	"bookshop/backend/internal/domain/publishers"
 	publisherentities "bookshop/backend/internal/domain/publishers/entities"
 	"bookshop/backend/internal/domain/shared"
-	"bookshop/backend/internal/requestlog"
 )
 
 type Handler struct {
@@ -68,7 +68,7 @@ func (h Handler) NewError(ctx context.Context, err error) *ogen.ErrorStatusCode 
 	code, category := classifyError(err)
 	if code == http.StatusInternalServerError && h.Logger != nil {
 		h.Logger.ErrorContext(ctx, "http request failed",
-			append(append([]any{"event", "http.request_failed"}, requestlog.BuildAttributes(ctx)...), "status_code", code, "error", err)...)
+			append(append([]any{"event", "http.request_failed"}, requestcontext.BuildAttributes(ctx)...), "status_code", code, "error", err)...)
 	}
 
 	if code != http.StatusInternalServerError {

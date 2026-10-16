@@ -13,7 +13,7 @@ import (
 	core "bookshop/frontend/internal/adapters/httpcore"
 	publisherhttp "bookshop/frontend/internal/adapters/publishers/http"
 	"bookshop/frontend/internal/api/web"
-	"bookshop/frontend/internal/appconfig"
+	"bookshop/frontend/internal/config"
 	bookports "bookshop/frontend/internal/ports/books"
 	publisherports "bookshop/frontend/internal/ports/publishers"
 	bookservice "bookshop/frontend/internal/services/books"
@@ -32,8 +32,8 @@ func New() *fx.App {
 			return &fxevent.SlogLogger{Logger: logger}
 		}),
 		fx.Provide(
-			func() appconfig.ServiceConfig { return appconfig.ServiceConfig{Name: "bookshop-web"} },
-			func(cfg appconfig.ServiceConfig) *slog.Logger {
+			func() config.ServiceConfig { return config.ServiceConfig{Name: "bookshop-web"} },
+			func(cfg config.ServiceConfig) *slog.Logger {
 				return slog.New(slog.NewJSONHandler(os.Stdout, nil)).With("service", cfg.Name)
 			},
 			func() (*core.Client, error) {

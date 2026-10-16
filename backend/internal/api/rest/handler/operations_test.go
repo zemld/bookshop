@@ -177,7 +177,7 @@ func TestOperationsHTTP(t *testing.T) {
 			tt.setup(books, publishers)
 			api := server.New(Handler{
 				Books: bookservice.Service{Repository: books}, Publishers: publisherservice.Service{Repository: publishers},
-			})
+			}, nil)
 
 			req := httptest.NewRequest(tt.method, tt.path, strings.NewReader(tt.body))
 			if tt.body != "" {

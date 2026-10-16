@@ -82,11 +82,7 @@ func decodeFieldCode(name string) (ogen.ProblemError, bool) {
 		return "", false
 	}
 }
-func New(handler ogen.Handler) http.Handler {
-	return newWithLogger(handler, nil)
-}
-
-func newWithLogger(handler ogen.Handler, logger *slog.Logger) http.Handler {
+func New(handler ogen.Handler, logger *slog.Logger) http.Handler {
 	server, err := ogen.NewServer(handler, ogen.WithErrorHandler(func(_ context.Context, w http.ResponseWriter, _ *http.Request, decodeErr error) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusBadRequest)
@@ -113,7 +109,7 @@ type Server struct {
 }
 
 func NewServer(lifecycle fx.Lifecycle, cfg Config, handler ogen.Handler, logger *slog.Logger) *Server {
-	s := newServer(cfg.Address, newWithLogger(handler, logger))
+	s := newServer(cfg.Address, New(handler, logger))
 	s.logger = logger
 	lifecycle.Append(fx.Hook{OnStart: s.Start, OnStop: s.Stop})
 

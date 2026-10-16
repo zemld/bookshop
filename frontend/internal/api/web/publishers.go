@@ -13,10 +13,10 @@ func (s Server) registerPublisherRoutes(m *http.ServeMux) {
 			s.renderErrorPage(w, r, err)
 			return
 		}
-		renderPage(w, 200, page{Kind: publishersPage, Title: "Издательства", Publishers: items})
+		renderPage(w, http.StatusOK, page{Kind: publishersPage, Title: "Издательства", Publishers: items})
 	})
 	m.HandleFunc("GET /publishers/new", func(w http.ResponseWriter, _ *http.Request) {
-		renderPage(w, 200, page{Kind: publisherPage, Title: "Издательство", New: true})
+		renderPage(w, http.StatusOK, page{Kind: publisherPage, Title: "Издательство", New: true})
 	})
 	m.HandleFunc("GET /publishers/{id}", func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseRouteID(r.PathValue("id"))
@@ -29,7 +29,7 @@ func (s Server) registerPublisherRoutes(m *http.ServeMux) {
 			s.renderErrorPage(w, r, err)
 			return
 		}
-		renderPage(w, 200, page{Kind: publisherPage, Title: "Издательство", Publisher: p})
+		renderPage(w, http.StatusOK, page{Kind: publisherPage, Title: "Издательство", Publisher: p})
 	})
 	m.HandleFunc("POST /publishers", s.savePublisher)
 	m.HandleFunc("POST /publishers/{id}", s.savePublisher)
