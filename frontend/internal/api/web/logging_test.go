@@ -10,6 +10,8 @@ import (
 	"sync"
 	"testing"
 
+	"bookshop/frontend/internal/adapters/api"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
@@ -32,9 +34,13 @@ func TestLogRequests(t *testing.T) {
 		w.WriteHeader(http.StatusInternalServerError)
 	})
 	handler := logRequests(mux, logger)
+	assetHandler := (Server{Logger: logger}).CreateHandler()
 	for _, tc := range []struct {
 		name       string
 		path       string
+		header     string
+		value      string
+		asset      bool
 		wantRoute  string
 		wantStatus int
 		wantLog    bool
@@ -44,11 +50,16 @@ func TestLogRequests(t *testing.T) {
 		{name: "unmatched route", path: "/not-found?token=private", wantRoute: "<unmatched>", wantStatus: 404, wantLog: true},
 		{name: "successful asset", path: "/assets/ok", wantRoute: "GET /assets/", wantStatus: 200},
 		{name: "missing asset", path: "/assets/missing", wantRoute: "GET /assets/", wantStatus: 404, wantLog: true},
+		{name: "FileServer existing asset", path: "/assets/site.css", asset: true, wantRoute: "GET /assets/", wantStatus: 200},
+		{name: "FileServer conditional asset", path: "/assets/site.css", header: "If-None-Match", value: "*", asset: true, wantRoute: "GET /assets/", wantStatus: 304},
+		{name: "FileServer partial asset", path: "/assets/site.css", header: "Range", value: "bytes=0-3", asset: true, wantRoute: "GET /assets/", wantStatus: 206},
+		{name: "FileServer missing asset", path: "/assets/missing.css", asset: true, wantRoute: "GET /assets/", wantStatus: 404, wantLog: true},
+		{name: "FileServer invalid range", path: "/assets/site.css", header: "Range", value: "bytes=999999999-", asset: true, wantRoute: "GET /assets/", wantStatus: 416, wantLog: true},
 		{name: "flush commits success", path: "/flush", wantRoute: "GET /flush", wantStatus: 200, wantLog: true},
 		{name: "concurrent IDs", run: func(t *testing.T) {
 			concurrentMux := http.NewServeMux()
 			concurrentMux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-				require.Equal(t, w.Header().Get("X-Request-ID"), r.Context().Value(requestKey{}).(requestInfo).id)
+				require.Equal(t, w.Header().Get("X-Request-ID"), api.GetRequestID(r.Context()))
 			})
 			concurrentHandler := logRequests(concurrentMux, slog.New(slog.NewJSONHandler(io.Discard, nil)))
 			var wg sync.WaitGroup
@@ -76,6 +87,7 @@ func TestLogRequests(t *testing.T) {
 			api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				ids <- r.Header.Get("X-Request-ID")
 				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set("X-Request-ID", r.Header.Get("X-Request-ID"))
 				_, _ = w.Write([]byte(`[]`))
 			}))
 			defer api.Close()
@@ -98,8 +110,15 @@ func TestLogRequests(t *testing.T) {
 			output.Reset()
 			req := httptest.NewRequest("GET", tc.path, nil)
 			req.Header.Set("X-Request-ID", "supplied")
+			if tc.header != "" {
+				req.Header.Set(tc.header, tc.value)
+			}
 			res := httptest.NewRecorder()
-			handler.ServeHTTP(res, req)
+			if tc.asset {
+				assetHandler.ServeHTTP(res, req)
+			} else {
+				handler.ServeHTTP(res, req)
+			}
 			id, err := uuid.Parse(res.Header().Get("X-Request-ID"))
 			require.NoError(t, err)
 			require.Equal(t, uuid.Version(4), id.Version())
@@ -147,43 +166,6 @@ func TestResponseRecorder(t *testing.T) {
 			if tc.name != "empty response" && tc.name != "informational then error" {
 				require.Equal(t, tc.want, recorder.Code)
 			}
-		})
-	}
-}
-
-func TestLogRequestsForAssets(t *testing.T) {
-	var output bytes.Buffer
-	handler := (Server{Logger: slog.New(slog.NewJSONHandler(&output, nil))}).CreateHandler()
-	for _, tc := range []struct {
-		name, path, header, value string
-		status                    int
-		logged                    bool
-	}{
-		{"existing", "/assets/site.css", "", "", http.StatusOK, false},
-		{"conditional", "/assets/site.css", "If-None-Match", "*", http.StatusNotModified, false},
-		{"partial", "/assets/site.css", "Range", "bytes=0-3", http.StatusPartialContent, false},
-		{"missing", "/assets/missing.css", "", "", http.StatusNotFound, true},
-		{"invalid range", "/assets/site.css", "Range", "bytes=999999999-", http.StatusRequestedRangeNotSatisfiable, true},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			output.Reset()
-			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
-			if tc.header != "" {
-				req.Header.Set(tc.header, tc.value)
-			}
-			res := httptest.NewRecorder()
-			handler.ServeHTTP(res, req)
-			require.Equal(t, tc.status, res.Code)
-			_, err := uuid.Parse(res.Header().Get("X-Request-ID"))
-			require.NoError(t, err)
-			if !tc.logged {
-				require.Empty(t, output.String())
-				return
-			}
-			var record map[string]any
-			require.NoError(t, json.Unmarshal(output.Bytes(), &record))
-			require.Equal(t, float64(tc.status), record["status_code"])
-			require.Equal(t, "GET /assets/", record["route"])
 		})
 	}
 }

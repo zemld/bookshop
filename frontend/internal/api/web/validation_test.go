@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"bookshop/frontend/internal/adapters/httpcore"
+	"bookshop/frontend/internal/adapters/api"
 
 	"github.com/stretchr/testify/require"
 )
@@ -57,6 +57,8 @@ func TestBookValidationKeepsFormAndValues(t *testing.T) {
 					"price": "Цена не может быть отрицательной.",
 				}
 				api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("Content-Type", "application/json")
+					w.Header().Set("X-Request-ID", r.Header.Get("X-Request-ID"))
 					if r.Method == "GET" && r.URL.Path == "/publishers" {
 						_, _ = fmt.Fprintf(w, `[{"id":%q,"name":"Издательство"}]`, testID)
 						return
@@ -129,7 +131,9 @@ func TestPublisherValidationAndConflictKeepForm(t *testing.T) {
 						message = "Издательство с таким названием уже существует."
 						code = "publisher_name_duplicate"
 					}
-					api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+					api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.Header().Set("Content-Type", "application/json")
+						w.Header().Set("X-Request-ID", r.Header.Get("X-Request-ID"))
 						w.WriteHeader(status)
 						require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
 							"error": code,
@@ -161,8 +165,8 @@ func TestPublicErrorHidesInternalDetails(t *testing.T) {
 	t.Parallel()
 	for _, err := range []error{
 		errors.New("dial tcp private-host:5432 password=secret"),
-		fmt.Errorf("wrapped: %w", &httpcore.APIError{StatusCode: 500, Code: "private SQL"}),
-		&httpcore.APIError{StatusCode: 400, Code: "invalid_response"},
+		fmt.Errorf("wrapped: %w", &api.APIError{StatusCode: 500, Code: "private SQL"}),
+		&api.APIError{StatusCode: 400, Code: "invalid_response"},
 	} {
 		code, message, fields := classifyPublicError(err)
 		require.Equal(t, 502, code)

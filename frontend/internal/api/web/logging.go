@@ -5,12 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"bookshop/frontend/internal/adapters/httpcore"
-
 	"github.com/google/uuid"
 )
 
-const requestIDHeader = "X-Request-ID"
+const _requestIDHeader = "X-Request-ID"
 
 func logRequests(mux *http.ServeMux, logger *slog.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -20,8 +18,8 @@ func logRequests(mux *http.ServeMux, logger *slog.Logger) http.Handler {
 		if pattern == "" {
 			pattern = "<unmatched>"
 		}
-		ctx := withRequest(httpcore.WithRequestID(r.Context(), id), id, r.Method, pattern)
-		w.Header().Set(requestIDHeader, id)
+		ctx := attachRequest(r.Context(), id, r.Method, pattern)
+		w.Header().Set(_requestIDHeader, id)
 		recorder := &responseRecorder{ResponseWriter: w}
 		mux.ServeHTTP(recorder, r.WithContext(ctx))
 		status := recorder.getStatusCode()

@@ -8,9 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	bookhttp "bookshop/frontend/internal/adapters/books/http"
-	core "bookshop/frontend/internal/adapters/httpcore"
-	publisherhttp "bookshop/frontend/internal/adapters/publishers/http"
+	apiClient "bookshop/frontend/internal/adapters/api"
 	bookservice "bookshop/frontend/internal/services/books"
 	publisherservice "bookshop/frontend/internal/services/publishers"
 
@@ -20,14 +18,15 @@ import (
 const testID = "4e643615-2a28-40a5-8e7d-fbe6dd2d498d"
 
 func createTestHandler(apiURL string) http.Handler {
-	c := core.New(apiURL)
-	b := &bookhttp.Client{Core: c}
-	p := &publisherhttp.Client{Core: c}
-	bs := &bookservice.Service{Books: b, Publishers: p}
-	ps := &publisherservice.Service{Publishers: p}
+	c, err := apiClient.New(apiURL)
+	if err != nil {
+		panic(err)
+	}
+	bs := &bookservice.Service{Books: c, Publishers: c}
+	ps := &publisherservice.Service{Publishers: c}
 	return (Server{
-		Books: b, DeleteBook: b, Publishers: p, GetPublisher: p, DeletePublisher: p,
-		LoadBookForm: bs, CreateBook: b, UpdateBook: b,
+		Books: c, DeleteBook: c, Publishers: c, GetPublisher: c, DeletePublisher: c,
+		LoadBookForm: bs, CreateBook: c, UpdateBook: c,
 		CreatePublisher: ps, UpdatePublisher: ps,
 	}).CreateHandler()
 }
@@ -35,9 +34,10 @@ func createTestHandler(apiURL string) http.Handler {
 func TestPublisherForms(t *testing.T) {
 	t.Parallel()
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Request-ID", r.Header.Get("X-Request-ID"))
 		require.Equal(t, "POST", r.Method)
 		require.Equal(t, "/publishers", r.URL.Path)
-		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"id":"` + testID + `","name":"Имя"}`))
 	}))
 	defer api.Close()
@@ -53,6 +53,8 @@ func TestBookInvalidForm(t *testing.T) {
 	t.Parallel()
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "GET /publishers", r.Method+" "+r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Request-ID", r.Header.Get("X-Request-ID"))
 		_, _ = w.Write([]byte(`[]`))
 	}))
 	t.Cleanup(api.Close)
@@ -76,13 +78,14 @@ func TestBookFormAndRoutes(t *testing.T) {
 	t.Parallel()
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Request-ID", r.Header.Get("X-Request-ID"))
 		switch r.Method + " " + r.URL.Path {
 		case "GET /publishers":
 			_, _ = w.Write([]byte(`[{"id":"` + testID + `","name":"Издательство"}]`))
 		case "GET /books/" + testID:
 			_, _ = w.Write([]byte(`{"id":"` + testID + `","author":"Автор","name":"Книга","year":2000,"price":2,"publisherId":"` + testID + `","publicationYear":2001,"quantity":3}`))
 		case "POST /books":
-			_, _ = w.Write([]byte(`{"id":"` + testID + `"}`))
+			_, _ = w.Write([]byte(`{"id":"` + testID + `","author":"Автор","name":"Книга","year":2000,"price":2,"publisherId":"` + testID + `","publicationYear":2001,"quantity":3}`))
 		default:
 			http.Error(w, "unexpected route", http.StatusNotFound)
 		}
@@ -124,6 +127,8 @@ func TestBookFormSyntaxAndBackendValidation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set("X-Request-ID", r.Header.Get("X-Request-ID"))
 				if r.Method == "GET" && r.URL.Path == "/publishers" {
 					_, _ = w.Write([]byte(`[]`))
 					return

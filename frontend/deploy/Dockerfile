@@ -9,4 +9,5 @@ RUN CGO_ENABLED=0 go build -buildvcs=false -o /app ./cmd
 
 FROM alpine:3.21
 COPY --from=build /app /app
+COPY config/config.yaml /config/config.yaml
 CMD ["/app"]

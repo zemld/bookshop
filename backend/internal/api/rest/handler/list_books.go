@@ -8,7 +8,7 @@ import (
 	"bookshop/backend/internal/api/rest/ogen"
 )
 
-func (h Handler) ListBooks(ctx context.Context) ([]ogen.Book, error) {
+func (h Handler) ListBooks(ctx context.Context) (*ogen.ListBooksOKHeaders, error) {
 	items, err := h.Books.ListBooks(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list books: %w", err)
@@ -19,5 +19,5 @@ func (h Handler) ListBooks(ctx context.Context) ([]ogen.Book, error) {
 		result = append(result, convert.ConvertToOgenBook(b))
 	}
 
-	return result, nil
+	return &ogen.ListBooksOKHeaders{Response: result}, nil
 }

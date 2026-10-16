@@ -38,7 +38,8 @@ func New() *fx.App {
 		}),
 		fx.Provide(
 			provideDatabase,
-			func() config.ServiceConfig { return config.ServiceConfig{Name: "bookshop-api"} },
+			func() (config.Config, error) { return config.Load("config/config.yaml") },
+			func(cfg config.Config) config.ServiceConfig { return cfg.Service },
 			func(cfg config.ServiceConfig) *slog.Logger {
 				return slog.New(slog.NewJSONHandler(os.Stdout, nil)).With("service", cfg.Name)
 			},
@@ -55,8 +56,8 @@ func New() *fx.App {
 			fx.Annotate(func(repo publisherrepository.Repository) *publisherservice.Service {
 				return &publisherservice.Service{Repository: repo}
 			}, fx.As(new(publishers.Publishers))),
-			fx.Annotate(func(books books.Books, publishers publishers.Publishers, logger *slog.Logger) handler.Handler {
-				return handler.Handler{Books: books, Publishers: publishers, Logger: logger}
+			fx.Annotate(func(books books.Books, publishers publishers.Publishers) handler.Handler {
+				return handler.Handler{Books: books, Publishers: publishers}
 			}, fx.As(new(ogen.Handler))),
 			server.NewServer,
 		),
@@ -64,13 +65,8 @@ func New() *fx.App {
 	)
 }
 
-func loadServerConfig() server.Config {
-	addr := os.Getenv("API_ADDR")
-	if addr == "" {
-		addr = ":8080"
-	}
-
-	return server.Config{Address: addr}
+func loadServerConfig(cfg config.Config) server.Config {
+	return server.Config{Address: cfg.Server.Address}
 }
 
 func provideDatabase(lifecycle fx.Lifecycle) (*pgxpool.Pool, error) {

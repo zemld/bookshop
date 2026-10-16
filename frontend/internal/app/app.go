@@ -2,16 +2,13 @@ package app
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	bookhttp "bookshop/frontend/internal/adapters/books/http"
-	core "bookshop/frontend/internal/adapters/httpcore"
-	publisherhttp "bookshop/frontend/internal/adapters/publishers/http"
+	"bookshop/frontend/internal/adapters/api"
 	"bookshop/frontend/internal/api/web"
 	"bookshop/frontend/internal/config"
 	bookports "bookshop/frontend/internal/ports/books"
@@ -23,30 +20,25 @@ import (
 	"go.uber.org/fx/fxevent"
 )
 
-const stopTimeout = 12 * time.Second
+const _stopTimeout = 12 * time.Second
 
 func New() *fx.App {
 	return fx.New(
-		fx.StopTimeout(stopTimeout),
+		fx.StopTimeout(_stopTimeout),
 		fx.WithLogger(func(logger *slog.Logger) fxevent.Logger {
 			return &fxevent.SlogLogger{Logger: logger}
 		}),
 		fx.Provide(
-			func() config.ServiceConfig { return config.ServiceConfig{Name: "bookshop-web"} },
+			func() (config.Config, error) { return config.Load("config/config.yaml") },
+			func(cfg config.Config) config.ServiceConfig { return cfg.Service },
 			func(cfg config.ServiceConfig) *slog.Logger {
 				return slog.New(slog.NewJSONHandler(os.Stdout, nil)).With("service", cfg.Name)
 			},
-			func() (*core.Client, error) {
-				endpoint := os.Getenv("API_URL")
-				if endpoint == "" {
-					return nil, errors.New("API_URL is required")
-				}
-				return core.New(endpoint), nil
+			func(cfg config.Config) (*api.Client, error) {
+				return api.New(cfg.API.URL)
 			},
-			func(c *core.Client) *bookhttp.Client { return &bookhttp.Client{Core: c} },
-			func(c *core.Client) *publisherhttp.Client { return &publisherhttp.Client{Core: c} },
-			func(c *bookhttp.Client) bookports.Books { return c },
-			func(c *publisherhttp.Client) publisherports.Publishers { return c },
+			func(c *api.Client) bookports.Books { return c },
+			func(c *api.Client) publisherports.Publishers { return c },
 			func(b bookports.Books, p publisherports.Publishers) *bookservice.Service {
 				return &bookservice.Service{Books: b, Publishers: p}
 			},
@@ -61,17 +53,13 @@ func New() *fx.App {
 					Logger: logger,
 				}
 			},
-			func(handler web.Server, logger *slog.Logger) *web.HTTPServer {
-				addr := os.Getenv("WEB_ADDR")
-				if addr == "" {
-					addr = ":8081"
-				}
-				server := web.NewHTTPServer(addr, handler.CreateHandler())
+			func(cfg config.Config, handler web.Server, logger *slog.Logger) *web.HTTPServer {
+				server := web.NewHTTPServer(cfg.Server.Address, handler.CreateHandler())
 				server.SetLogger(logger)
 				return server
 			},
 		),
-		fx.Invoke(func(lc fx.Lifecycle, server *web.HTTPServer, client *core.Client) {
+		fx.Invoke(func(lc fx.Lifecycle, server *web.HTTPServer, client *api.Client) {
 			lc.Append(fx.Hook{OnStop: func(context.Context) error { client.Stop(); return nil }})
 			lc.Append(fx.Hook{OnStart: server.Start, OnStop: server.Stop})
 		}),
@@ -89,7 +77,7 @@ func Run() error {
 		return err
 	}
 	<-ctx.Done()
-	drain, cancel := context.WithTimeout(context.Background(), stopTimeout)
+	drain, cancel := context.WithTimeout(context.Background(), _stopTimeout)
 	defer cancel()
 	return application.Stop(drain)
 }

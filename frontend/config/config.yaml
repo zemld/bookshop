@@ -1,0 +1,6 @@
+service:
+  name: bookshop-web
+server:
+  address: ":8081"
+api:
+  url: ""

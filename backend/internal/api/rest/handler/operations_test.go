@@ -180,6 +180,8 @@ func TestOperationsHTTP(t *testing.T) {
 			}, nil)
 
 			req := httptest.NewRequest(tt.method, tt.path, strings.NewReader(tt.body))
+			req.Header.Set("X-Request-ID", "31079ea7-48a9-46ee-af99-15e6f8020c38")
+
 			if tt.body != "" {
 				req.Header.Set("Content-Type", "application/json")
 			}
@@ -188,6 +190,7 @@ func TestOperationsHTTP(t *testing.T) {
 			api.ServeHTTP(res, req)
 
 			require.Equal(t, tt.wantStatus, res.Code)
+			require.Equal(t, "31079ea7-48a9-46ee-af99-15e6f8020c38", res.Header().Get("X-Request-ID"))
 			require.JSONEq(t, tt.wantJSON, res.Body.String())
 		})
 	}

@@ -9,13 +9,11 @@ import (
 	"bookshop/backend/internal/domain/publishers/entities"
 )
 
-func (h Handler) UpdatePublisher(ctx context.Context, req *ogen.PublisherInput, params ogen.UpdatePublisherParams) (*ogen.Publisher, error) {
+func (h Handler) UpdatePublisher(ctx context.Context, req *ogen.PublisherInput, params ogen.UpdatePublisherParams) (*ogen.PublisherHeaders, error) {
 	p, err := h.Publishers.UpdatePublisher(ctx, entities.Publisher{ID: params.ID, Name: req.Name})
 	if err != nil {
 		return nil, fmt.Errorf("update publisher: %w", err)
 	}
 
-	value := convert.ConvertToOgenPublisher(p)
-
-	return &value, nil
+	return &ogen.PublisherHeaders{Response: convert.ConvertToOgenPublisher(p)}, nil
 }

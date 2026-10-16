@@ -10,11 +10,13 @@ import (
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
 
+	"github.com/ogen-go/ogen/conv"
 	"github.com/ogen-go/ogen/ogenerrors"
+	"github.com/ogen-go/ogen/uri"
 	"github.com/ogen-go/ogen/validate"
 )
 
-func decodeCreateBookResponse(resp *http.Response) (res *Book, _ error) {
+func decodeCreateBookResponse(resp *http.Response) (res *BookHeaders, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -47,13 +49,48 @@ func decodeCreateBookResponse(resp *http.Response) (res *Book, _ error) {
 				}
 				return res, err
 			}
-			return &response, nil
+			var wrapper BookHeaders
+			wrapper.Response = response
+			h := uri.NewHeaderDecoder(resp.Header)
+			// Parse "X-Request-ID" header.
+			{
+				cfg := uri.HeaderParameterDecodingConfig{
+					Name:    "X-Request-ID",
+					Explode: false,
+				}
+				if err := func() error {
+					if err := h.HasParam(cfg); err == nil {
+						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							val, err := d.DecodeValue()
+							if err != nil {
+								return err
+							}
+
+							c, err := conv.ToUUID(val)
+							if err != nil {
+								return err
+							}
+
+							wrapper.XRequestID = c
+							return nil
+						}); err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+					return nil
+				}(); err != nil {
+					return res, errors.Wrap(err, "parse X-Request-ID header")
+				}
+			}
+			return &wrapper, nil
 		default:
 			return res, validate.InvalidContentType(ct)
 		}
 	}
 	// Convenient error response.
-	defRes, err := func() (res *ErrorStatusCode, err error) {
+	defRes, err := func() (res *ErrorStatusCodeWithHeaders, err error) {
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -92,10 +129,43 @@ func decodeCreateBookResponse(resp *http.Response) (res *Book, _ error) {
 			}(); err != nil {
 				return res, errors.Wrap(err, "validate")
 			}
-			return &ErrorStatusCode{
-				StatusCode: resp.StatusCode,
-				Response:   response,
-			}, nil
+			var wrapper ErrorStatusCodeWithHeaders
+			wrapper.Response = response
+			wrapper.StatusCode = resp.StatusCode
+			h := uri.NewHeaderDecoder(resp.Header)
+			// Parse "X-Request-ID" header.
+			{
+				cfg := uri.HeaderParameterDecodingConfig{
+					Name:    "X-Request-ID",
+					Explode: false,
+				}
+				if err := func() error {
+					if err := h.HasParam(cfg); err == nil {
+						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							val, err := d.DecodeValue()
+							if err != nil {
+								return err
+							}
+
+							c, err := conv.ToUUID(val)
+							if err != nil {
+								return err
+							}
+
+							wrapper.XRequestID = c
+							return nil
+						}); err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+					return nil
+				}(); err != nil {
+					return res, errors.Wrap(err, "parse X-Request-ID header")
+				}
+			}
+			return &wrapper, nil
 		default:
 			return res, validate.InvalidContentType(ct)
 		}
@@ -106,7 +176,7 @@ func decodeCreateBookResponse(resp *http.Response) (res *Book, _ error) {
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeCreatePublisherResponse(resp *http.Response) (res *Publisher, _ error) {
+func decodeCreatePublisherResponse(resp *http.Response) (res *PublisherHeaders, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -139,13 +209,48 @@ func decodeCreatePublisherResponse(resp *http.Response) (res *Publisher, _ error
 				}
 				return res, err
 			}
-			return &response, nil
+			var wrapper PublisherHeaders
+			wrapper.Response = response
+			h := uri.NewHeaderDecoder(resp.Header)
+			// Parse "X-Request-ID" header.
+			{
+				cfg := uri.HeaderParameterDecodingConfig{
+					Name:    "X-Request-ID",
+					Explode: false,
+				}
+				if err := func() error {
+					if err := h.HasParam(cfg); err == nil {
+						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							val, err := d.DecodeValue()
+							if err != nil {
+								return err
+							}
+
+							c, err := conv.ToUUID(val)
+							if err != nil {
+								return err
+							}
+
+							wrapper.XRequestID = c
+							return nil
+						}); err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+					return nil
+				}(); err != nil {
+					return res, errors.Wrap(err, "parse X-Request-ID header")
+				}
+			}
+			return &wrapper, nil
 		default:
 			return res, validate.InvalidContentType(ct)
 		}
 	}
 	// Convenient error response.
-	defRes, err := func() (res *ErrorStatusCode, err error) {
+	defRes, err := func() (res *ErrorStatusCodeWithHeaders, err error) {
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -184,10 +289,43 @@ func decodeCreatePublisherResponse(resp *http.Response) (res *Publisher, _ error
 			}(); err != nil {
 				return res, errors.Wrap(err, "validate")
 			}
-			return &ErrorStatusCode{
-				StatusCode: resp.StatusCode,
-				Response:   response,
-			}, nil
+			var wrapper ErrorStatusCodeWithHeaders
+			wrapper.Response = response
+			wrapper.StatusCode = resp.StatusCode
+			h := uri.NewHeaderDecoder(resp.Header)
+			// Parse "X-Request-ID" header.
+			{
+				cfg := uri.HeaderParameterDecodingConfig{
+					Name:    "X-Request-ID",
+					Explode: false,
+				}
+				if err := func() error {
+					if err := h.HasParam(cfg); err == nil {
+						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							val, err := d.DecodeValue()
+							if err != nil {
+								return err
+							}
+
+							c, err := conv.ToUUID(val)
+							if err != nil {
+								return err
+							}
+
+							wrapper.XRequestID = c
+							return nil
+						}); err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+					return nil
+				}(); err != nil {
+					return res, errors.Wrap(err, "parse X-Request-ID header")
+				}
+			}
+			return &wrapper, nil
 		default:
 			return res, validate.InvalidContentType(ct)
 		}
@@ -198,7 +336,7 @@ func decodeCreatePublisherResponse(resp *http.Response) (res *Publisher, _ error
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeDeleteBookResponse(resp *http.Response) (res *Deleted, _ error) {
+func decodeDeleteBookResponse(resp *http.Response) (res *DeletedHeaders, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -231,13 +369,48 @@ func decodeDeleteBookResponse(resp *http.Response) (res *Deleted, _ error) {
 				}
 				return res, err
 			}
-			return &response, nil
+			var wrapper DeletedHeaders
+			wrapper.Response = response
+			h := uri.NewHeaderDecoder(resp.Header)
+			// Parse "X-Request-ID" header.
+			{
+				cfg := uri.HeaderParameterDecodingConfig{
+					Name:    "X-Request-ID",
+					Explode: false,
+				}
+				if err := func() error {
+					if err := h.HasParam(cfg); err == nil {
+						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							val, err := d.DecodeValue()
+							if err != nil {
+								return err
+							}
+
+							c, err := conv.ToUUID(val)
+							if err != nil {
+								return err
+							}
+
+							wrapper.XRequestID = c
+							return nil
+						}); err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+					return nil
+				}(); err != nil {
+					return res, errors.Wrap(err, "parse X-Request-ID header")
+				}
+			}
+			return &wrapper, nil
 		default:
 			return res, validate.InvalidContentType(ct)
 		}
 	}
 	// Convenient error response.
-	defRes, err := func() (res *ErrorStatusCode, err error) {
+	defRes, err := func() (res *ErrorStatusCodeWithHeaders, err error) {
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -276,10 +449,43 @@ func decodeDeleteBookResponse(resp *http.Response) (res *Deleted, _ error) {
 			}(); err != nil {
 				return res, errors.Wrap(err, "validate")
 			}
-			return &ErrorStatusCode{
-				StatusCode: resp.StatusCode,
-				Response:   response,
-			}, nil
+			var wrapper ErrorStatusCodeWithHeaders
+			wrapper.Response = response
+			wrapper.StatusCode = resp.StatusCode
+			h := uri.NewHeaderDecoder(resp.Header)
+			// Parse "X-Request-ID" header.
+			{
+				cfg := uri.HeaderParameterDecodingConfig{
+					Name:    "X-Request-ID",
+					Explode: false,
+				}
+				if err := func() error {
+					if err := h.HasParam(cfg); err == nil {
+						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							val, err := d.DecodeValue()
+							if err != nil {
+								return err
+							}
+
+							c, err := conv.ToUUID(val)
+							if err != nil {
+								return err
+							}
+
+							wrapper.XRequestID = c
+							return nil
+						}); err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+					return nil
+				}(); err != nil {
+					return res, errors.Wrap(err, "parse X-Request-ID header")
+				}
+			}
+			return &wrapper, nil
 		default:
 			return res, validate.InvalidContentType(ct)
 		}
@@ -290,7 +496,7 @@ func decodeDeleteBookResponse(resp *http.Response) (res *Deleted, _ error) {
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeDeletePublisherResponse(resp *http.Response) (res *Deleted, _ error) {
+func decodeDeletePublisherResponse(resp *http.Response) (res *DeletedHeaders, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -323,13 +529,48 @@ func decodeDeletePublisherResponse(resp *http.Response) (res *Deleted, _ error) 
 				}
 				return res, err
 			}
-			return &response, nil
+			var wrapper DeletedHeaders
+			wrapper.Response = response
+			h := uri.NewHeaderDecoder(resp.Header)
+			// Parse "X-Request-ID" header.
+			{
+				cfg := uri.HeaderParameterDecodingConfig{
+					Name:    "X-Request-ID",
+					Explode: false,
+				}
+				if err := func() error {
+					if err := h.HasParam(cfg); err == nil {
+						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							val, err := d.DecodeValue()
+							if err != nil {
+								return err
+							}
+
+							c, err := conv.ToUUID(val)
+							if err != nil {
+								return err
+							}
+
+							wrapper.XRequestID = c
+							return nil
+						}); err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+					return nil
+				}(); err != nil {
+					return res, errors.Wrap(err, "parse X-Request-ID header")
+				}
+			}
+			return &wrapper, nil
 		default:
 			return res, validate.InvalidContentType(ct)
 		}
 	}
 	// Convenient error response.
-	defRes, err := func() (res *ErrorStatusCode, err error) {
+	defRes, err := func() (res *ErrorStatusCodeWithHeaders, err error) {
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -368,10 +609,43 @@ func decodeDeletePublisherResponse(resp *http.Response) (res *Deleted, _ error) 
 			}(); err != nil {
 				return res, errors.Wrap(err, "validate")
 			}
-			return &ErrorStatusCode{
-				StatusCode: resp.StatusCode,
-				Response:   response,
-			}, nil
+			var wrapper ErrorStatusCodeWithHeaders
+			wrapper.Response = response
+			wrapper.StatusCode = resp.StatusCode
+			h := uri.NewHeaderDecoder(resp.Header)
+			// Parse "X-Request-ID" header.
+			{
+				cfg := uri.HeaderParameterDecodingConfig{
+					Name:    "X-Request-ID",
+					Explode: false,
+				}
+				if err := func() error {
+					if err := h.HasParam(cfg); err == nil {
+						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							val, err := d.DecodeValue()
+							if err != nil {
+								return err
+							}
+
+							c, err := conv.ToUUID(val)
+							if err != nil {
+								return err
+							}
+
+							wrapper.XRequestID = c
+							return nil
+						}); err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+					return nil
+				}(); err != nil {
+					return res, errors.Wrap(err, "parse X-Request-ID header")
+				}
+			}
+			return &wrapper, nil
 		default:
 			return res, validate.InvalidContentType(ct)
 		}
@@ -382,7 +656,7 @@ func decodeDeletePublisherResponse(resp *http.Response) (res *Deleted, _ error) 
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeGetBookResponse(resp *http.Response) (res *Book, _ error) {
+func decodeGetBookResponse(resp *http.Response) (res *BookHeaders, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -415,13 +689,48 @@ func decodeGetBookResponse(resp *http.Response) (res *Book, _ error) {
 				}
 				return res, err
 			}
-			return &response, nil
+			var wrapper BookHeaders
+			wrapper.Response = response
+			h := uri.NewHeaderDecoder(resp.Header)
+			// Parse "X-Request-ID" header.
+			{
+				cfg := uri.HeaderParameterDecodingConfig{
+					Name:    "X-Request-ID",
+					Explode: false,
+				}
+				if err := func() error {
+					if err := h.HasParam(cfg); err == nil {
+						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							val, err := d.DecodeValue()
+							if err != nil {
+								return err
+							}
+
+							c, err := conv.ToUUID(val)
+							if err != nil {
+								return err
+							}
+
+							wrapper.XRequestID = c
+							return nil
+						}); err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+					return nil
+				}(); err != nil {
+					return res, errors.Wrap(err, "parse X-Request-ID header")
+				}
+			}
+			return &wrapper, nil
 		default:
 			return res, validate.InvalidContentType(ct)
 		}
 	}
 	// Convenient error response.
-	defRes, err := func() (res *ErrorStatusCode, err error) {
+	defRes, err := func() (res *ErrorStatusCodeWithHeaders, err error) {
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -460,10 +769,43 @@ func decodeGetBookResponse(resp *http.Response) (res *Book, _ error) {
 			}(); err != nil {
 				return res, errors.Wrap(err, "validate")
 			}
-			return &ErrorStatusCode{
-				StatusCode: resp.StatusCode,
-				Response:   response,
-			}, nil
+			var wrapper ErrorStatusCodeWithHeaders
+			wrapper.Response = response
+			wrapper.StatusCode = resp.StatusCode
+			h := uri.NewHeaderDecoder(resp.Header)
+			// Parse "X-Request-ID" header.
+			{
+				cfg := uri.HeaderParameterDecodingConfig{
+					Name:    "X-Request-ID",
+					Explode: false,
+				}
+				if err := func() error {
+					if err := h.HasParam(cfg); err == nil {
+						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							val, err := d.DecodeValue()
+							if err != nil {
+								return err
+							}
+
+							c, err := conv.ToUUID(val)
+							if err != nil {
+								return err
+							}
+
+							wrapper.XRequestID = c
+							return nil
+						}); err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+					return nil
+				}(); err != nil {
+					return res, errors.Wrap(err, "parse X-Request-ID header")
+				}
+			}
+			return &wrapper, nil
 		default:
 			return res, validate.InvalidContentType(ct)
 		}
@@ -474,7 +816,7 @@ func decodeGetBookResponse(resp *http.Response) (res *Book, _ error) {
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeGetPublisherResponse(resp *http.Response) (res *Publisher, _ error) {
+func decodeGetPublisherResponse(resp *http.Response) (res *PublisherHeaders, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -507,13 +849,48 @@ func decodeGetPublisherResponse(resp *http.Response) (res *Publisher, _ error) {
 				}
 				return res, err
 			}
-			return &response, nil
+			var wrapper PublisherHeaders
+			wrapper.Response = response
+			h := uri.NewHeaderDecoder(resp.Header)
+			// Parse "X-Request-ID" header.
+			{
+				cfg := uri.HeaderParameterDecodingConfig{
+					Name:    "X-Request-ID",
+					Explode: false,
+				}
+				if err := func() error {
+					if err := h.HasParam(cfg); err == nil {
+						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							val, err := d.DecodeValue()
+							if err != nil {
+								return err
+							}
+
+							c, err := conv.ToUUID(val)
+							if err != nil {
+								return err
+							}
+
+							wrapper.XRequestID = c
+							return nil
+						}); err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+					return nil
+				}(); err != nil {
+					return res, errors.Wrap(err, "parse X-Request-ID header")
+				}
+			}
+			return &wrapper, nil
 		default:
 			return res, validate.InvalidContentType(ct)
 		}
 	}
 	// Convenient error response.
-	defRes, err := func() (res *ErrorStatusCode, err error) {
+	defRes, err := func() (res *ErrorStatusCodeWithHeaders, err error) {
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -552,10 +929,43 @@ func decodeGetPublisherResponse(resp *http.Response) (res *Publisher, _ error) {
 			}(); err != nil {
 				return res, errors.Wrap(err, "validate")
 			}
-			return &ErrorStatusCode{
-				StatusCode: resp.StatusCode,
-				Response:   response,
-			}, nil
+			var wrapper ErrorStatusCodeWithHeaders
+			wrapper.Response = response
+			wrapper.StatusCode = resp.StatusCode
+			h := uri.NewHeaderDecoder(resp.Header)
+			// Parse "X-Request-ID" header.
+			{
+				cfg := uri.HeaderParameterDecodingConfig{
+					Name:    "X-Request-ID",
+					Explode: false,
+				}
+				if err := func() error {
+					if err := h.HasParam(cfg); err == nil {
+						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							val, err := d.DecodeValue()
+							if err != nil {
+								return err
+							}
+
+							c, err := conv.ToUUID(val)
+							if err != nil {
+								return err
+							}
+
+							wrapper.XRequestID = c
+							return nil
+						}); err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+					return nil
+				}(); err != nil {
+					return res, errors.Wrap(err, "parse X-Request-ID header")
+				}
+			}
+			return &wrapper, nil
 		default:
 			return res, validate.InvalidContentType(ct)
 		}
@@ -566,7 +976,7 @@ func decodeGetPublisherResponse(resp *http.Response) (res *Publisher, _ error) {
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeListBooksResponse(resp *http.Response) (res []Book, _ error) {
+func decodeListBooksResponse(resp *http.Response) (res *ListBooksOKHeaders, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -616,13 +1026,48 @@ func decodeListBooksResponse(resp *http.Response) (res []Book, _ error) {
 			}(); err != nil {
 				return res, errors.Wrap(err, "validate")
 			}
-			return response, nil
+			var wrapper ListBooksOKHeaders
+			wrapper.Response = response
+			h := uri.NewHeaderDecoder(resp.Header)
+			// Parse "X-Request-ID" header.
+			{
+				cfg := uri.HeaderParameterDecodingConfig{
+					Name:    "X-Request-ID",
+					Explode: false,
+				}
+				if err := func() error {
+					if err := h.HasParam(cfg); err == nil {
+						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							val, err := d.DecodeValue()
+							if err != nil {
+								return err
+							}
+
+							c, err := conv.ToUUID(val)
+							if err != nil {
+								return err
+							}
+
+							wrapper.XRequestID = c
+							return nil
+						}); err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+					return nil
+				}(); err != nil {
+					return res, errors.Wrap(err, "parse X-Request-ID header")
+				}
+			}
+			return &wrapper, nil
 		default:
 			return res, validate.InvalidContentType(ct)
 		}
 	}
 	// Convenient error response.
-	defRes, err := func() (res *ErrorStatusCode, err error) {
+	defRes, err := func() (res *ErrorStatusCodeWithHeaders, err error) {
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -661,10 +1106,43 @@ func decodeListBooksResponse(resp *http.Response) (res []Book, _ error) {
 			}(); err != nil {
 				return res, errors.Wrap(err, "validate")
 			}
-			return &ErrorStatusCode{
-				StatusCode: resp.StatusCode,
-				Response:   response,
-			}, nil
+			var wrapper ErrorStatusCodeWithHeaders
+			wrapper.Response = response
+			wrapper.StatusCode = resp.StatusCode
+			h := uri.NewHeaderDecoder(resp.Header)
+			// Parse "X-Request-ID" header.
+			{
+				cfg := uri.HeaderParameterDecodingConfig{
+					Name:    "X-Request-ID",
+					Explode: false,
+				}
+				if err := func() error {
+					if err := h.HasParam(cfg); err == nil {
+						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							val, err := d.DecodeValue()
+							if err != nil {
+								return err
+							}
+
+							c, err := conv.ToUUID(val)
+							if err != nil {
+								return err
+							}
+
+							wrapper.XRequestID = c
+							return nil
+						}); err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+					return nil
+				}(); err != nil {
+					return res, errors.Wrap(err, "parse X-Request-ID header")
+				}
+			}
+			return &wrapper, nil
 		default:
 			return res, validate.InvalidContentType(ct)
 		}
@@ -675,7 +1153,7 @@ func decodeListBooksResponse(resp *http.Response) (res []Book, _ error) {
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeListPublishersResponse(resp *http.Response) (res []Publisher, _ error) {
+func decodeListPublishersResponse(resp *http.Response) (res *ListPublishersOKHeaders, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -725,13 +1203,48 @@ func decodeListPublishersResponse(resp *http.Response) (res []Publisher, _ error
 			}(); err != nil {
 				return res, errors.Wrap(err, "validate")
 			}
-			return response, nil
+			var wrapper ListPublishersOKHeaders
+			wrapper.Response = response
+			h := uri.NewHeaderDecoder(resp.Header)
+			// Parse "X-Request-ID" header.
+			{
+				cfg := uri.HeaderParameterDecodingConfig{
+					Name:    "X-Request-ID",
+					Explode: false,
+				}
+				if err := func() error {
+					if err := h.HasParam(cfg); err == nil {
+						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							val, err := d.DecodeValue()
+							if err != nil {
+								return err
+							}
+
+							c, err := conv.ToUUID(val)
+							if err != nil {
+								return err
+							}
+
+							wrapper.XRequestID = c
+							return nil
+						}); err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+					return nil
+				}(); err != nil {
+					return res, errors.Wrap(err, "parse X-Request-ID header")
+				}
+			}
+			return &wrapper, nil
 		default:
 			return res, validate.InvalidContentType(ct)
 		}
 	}
 	// Convenient error response.
-	defRes, err := func() (res *ErrorStatusCode, err error) {
+	defRes, err := func() (res *ErrorStatusCodeWithHeaders, err error) {
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -770,10 +1283,43 @@ func decodeListPublishersResponse(resp *http.Response) (res []Publisher, _ error
 			}(); err != nil {
 				return res, errors.Wrap(err, "validate")
 			}
-			return &ErrorStatusCode{
-				StatusCode: resp.StatusCode,
-				Response:   response,
-			}, nil
+			var wrapper ErrorStatusCodeWithHeaders
+			wrapper.Response = response
+			wrapper.StatusCode = resp.StatusCode
+			h := uri.NewHeaderDecoder(resp.Header)
+			// Parse "X-Request-ID" header.
+			{
+				cfg := uri.HeaderParameterDecodingConfig{
+					Name:    "X-Request-ID",
+					Explode: false,
+				}
+				if err := func() error {
+					if err := h.HasParam(cfg); err == nil {
+						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							val, err := d.DecodeValue()
+							if err != nil {
+								return err
+							}
+
+							c, err := conv.ToUUID(val)
+							if err != nil {
+								return err
+							}
+
+							wrapper.XRequestID = c
+							return nil
+						}); err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+					return nil
+				}(); err != nil {
+					return res, errors.Wrap(err, "parse X-Request-ID header")
+				}
+			}
+			return &wrapper, nil
 		default:
 			return res, validate.InvalidContentType(ct)
 		}
@@ -784,7 +1330,7 @@ func decodeListPublishersResponse(resp *http.Response) (res []Publisher, _ error
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeUpdateBookResponse(resp *http.Response) (res *Book, _ error) {
+func decodeUpdateBookResponse(resp *http.Response) (res *BookHeaders, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -817,13 +1363,48 @@ func decodeUpdateBookResponse(resp *http.Response) (res *Book, _ error) {
 				}
 				return res, err
 			}
-			return &response, nil
+			var wrapper BookHeaders
+			wrapper.Response = response
+			h := uri.NewHeaderDecoder(resp.Header)
+			// Parse "X-Request-ID" header.
+			{
+				cfg := uri.HeaderParameterDecodingConfig{
+					Name:    "X-Request-ID",
+					Explode: false,
+				}
+				if err := func() error {
+					if err := h.HasParam(cfg); err == nil {
+						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							val, err := d.DecodeValue()
+							if err != nil {
+								return err
+							}
+
+							c, err := conv.ToUUID(val)
+							if err != nil {
+								return err
+							}
+
+							wrapper.XRequestID = c
+							return nil
+						}); err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+					return nil
+				}(); err != nil {
+					return res, errors.Wrap(err, "parse X-Request-ID header")
+				}
+			}
+			return &wrapper, nil
 		default:
 			return res, validate.InvalidContentType(ct)
 		}
 	}
 	// Convenient error response.
-	defRes, err := func() (res *ErrorStatusCode, err error) {
+	defRes, err := func() (res *ErrorStatusCodeWithHeaders, err error) {
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -862,10 +1443,43 @@ func decodeUpdateBookResponse(resp *http.Response) (res *Book, _ error) {
 			}(); err != nil {
 				return res, errors.Wrap(err, "validate")
 			}
-			return &ErrorStatusCode{
-				StatusCode: resp.StatusCode,
-				Response:   response,
-			}, nil
+			var wrapper ErrorStatusCodeWithHeaders
+			wrapper.Response = response
+			wrapper.StatusCode = resp.StatusCode
+			h := uri.NewHeaderDecoder(resp.Header)
+			// Parse "X-Request-ID" header.
+			{
+				cfg := uri.HeaderParameterDecodingConfig{
+					Name:    "X-Request-ID",
+					Explode: false,
+				}
+				if err := func() error {
+					if err := h.HasParam(cfg); err == nil {
+						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							val, err := d.DecodeValue()
+							if err != nil {
+								return err
+							}
+
+							c, err := conv.ToUUID(val)
+							if err != nil {
+								return err
+							}
+
+							wrapper.XRequestID = c
+							return nil
+						}); err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+					return nil
+				}(); err != nil {
+					return res, errors.Wrap(err, "parse X-Request-ID header")
+				}
+			}
+			return &wrapper, nil
 		default:
 			return res, validate.InvalidContentType(ct)
 		}
@@ -876,7 +1490,7 @@ func decodeUpdateBookResponse(resp *http.Response) (res *Book, _ error) {
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeUpdatePublisherResponse(resp *http.Response) (res *Publisher, _ error) {
+func decodeUpdatePublisherResponse(resp *http.Response) (res *PublisherHeaders, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -909,13 +1523,48 @@ func decodeUpdatePublisherResponse(resp *http.Response) (res *Publisher, _ error
 				}
 				return res, err
 			}
-			return &response, nil
+			var wrapper PublisherHeaders
+			wrapper.Response = response
+			h := uri.NewHeaderDecoder(resp.Header)
+			// Parse "X-Request-ID" header.
+			{
+				cfg := uri.HeaderParameterDecodingConfig{
+					Name:    "X-Request-ID",
+					Explode: false,
+				}
+				if err := func() error {
+					if err := h.HasParam(cfg); err == nil {
+						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							val, err := d.DecodeValue()
+							if err != nil {
+								return err
+							}
+
+							c, err := conv.ToUUID(val)
+							if err != nil {
+								return err
+							}
+
+							wrapper.XRequestID = c
+							return nil
+						}); err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+					return nil
+				}(); err != nil {
+					return res, errors.Wrap(err, "parse X-Request-ID header")
+				}
+			}
+			return &wrapper, nil
 		default:
 			return res, validate.InvalidContentType(ct)
 		}
 	}
 	// Convenient error response.
-	defRes, err := func() (res *ErrorStatusCode, err error) {
+	defRes, err := func() (res *ErrorStatusCodeWithHeaders, err error) {
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -954,10 +1603,43 @@ func decodeUpdatePublisherResponse(resp *http.Response) (res *Publisher, _ error
 			}(); err != nil {
 				return res, errors.Wrap(err, "validate")
 			}
-			return &ErrorStatusCode{
-				StatusCode: resp.StatusCode,
-				Response:   response,
-			}, nil
+			var wrapper ErrorStatusCodeWithHeaders
+			wrapper.Response = response
+			wrapper.StatusCode = resp.StatusCode
+			h := uri.NewHeaderDecoder(resp.Header)
+			// Parse "X-Request-ID" header.
+			{
+				cfg := uri.HeaderParameterDecodingConfig{
+					Name:    "X-Request-ID",
+					Explode: false,
+				}
+				if err := func() error {
+					if err := h.HasParam(cfg); err == nil {
+						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							val, err := d.DecodeValue()
+							if err != nil {
+								return err
+							}
+
+							c, err := conv.ToUUID(val)
+							if err != nil {
+								return err
+							}
+
+							wrapper.XRequestID = c
+							return nil
+						}); err != nil {
+							return err
+						}
+					} else {
+						return err
+					}
+					return nil
+				}(); err != nil {
+					return res, errors.Wrap(err, "parse X-Request-ID header")
+				}
+			}
+			return &wrapper, nil
 		default:
 			return res, validate.InvalidContentType(ct)
 		}

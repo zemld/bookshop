@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"bookshop/frontend/internal/adapters/httpcore"
+	"bookshop/frontend/internal/adapters/api"
 )
 
 type errorDescription struct {
@@ -66,7 +66,7 @@ func classifyPublicError(err error) (int, string, map[string]string) {
 	if errors.Is(err, errInvalidForm) {
 		return http.StatusBadRequest, errorDescriptions["invalid_request"].Message, nil
 	}
-	var apiError *httpcore.APIError
+	var apiError *api.APIError
 	if errors.As(err, &apiError) && apiError.Code != "invalid_response" {
 		switch apiError.StatusCode {
 		case http.StatusBadRequest, http.StatusConflict:
@@ -86,7 +86,7 @@ func logUnexpectedError(ctx context.Context, logger *slog.Logger, err error) {
 			return
 		}
 		attrs := append([]any{"event", "http.request_failed"}, buildRequestAttributes(ctx)...)
-		var apiError *httpcore.APIError
+		var apiError *api.APIError
 		if errors.As(err, &apiError) {
 			attrs = append(attrs, "upstream_status_code", apiError.StatusCode, "error_code", apiError.Code)
 		}

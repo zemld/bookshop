@@ -1,92 +1,78 @@
 package server
 
 import (
-	"fmt"
+	"context"
 	"log/slog"
 	"net/http"
 	"time"
 
-	"bookshop/backend/internal/api/rest/handler/requestcontext"
 	"bookshop/backend/internal/api/rest/ogen"
 
 	"github.com/google/uuid"
+	"github.com/ogen-go/ogen/middleware"
 )
 
-const requestIDHeader = "X-Request-ID"
+const _requestIDHeader = "X-Request-ID"
 
-func logRequests(next *ogen.Server, logger *slog.Logger) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+type requestIDKey struct{}
+
+func logRequests(server **ogen.Server, handler ogen.Handler, logger *slog.Logger) ogen.Middleware {
+	return func(req middleware.Request, next middleware.Next) (middleware.Response, error) {
 		started := time.Now()
 
-		id := r.Header.Get(requestIDHeader)
-		if _, err := uuid.Parse(id); err != nil {
-			id = uuid.NewString()
-		}
+		id := getRequestID(req.Raw.Header)
 
-		route := "<unmatched>"
-		if matched, ok := next.FindPath(r.Method, r.URL); ok {
-			route = matched.PathPattern()
-		}
+		req.SetContext(context.WithValue(req.Context, requestIDKey{}, id))
+		route, _ := (*server).FindPath(req.Raw.Method, req.Raw.URL)
+		attrs := []any{"request_id", id, "method", req.Raw.Method, "route", route.PathPattern()}
+		response, err := next(req)
 
-		ctx := requestcontext.WithRequest(r.Context(), id, r.Method, route)
-		w.Header().Set(requestIDHeader, id)
-		recorder := &responseRecorder{ResponseWriter: w}
-		next.ServeHTTP(recorder, r.WithContext(ctx))
+		var (
+			status = http.StatusOK
+			coded  *ogen.ErrorStatusCodeWithHeaders
+		)
+
+		if err != nil {
+			var ok bool
+
+			coded, ok = err.(*ogen.ErrorStatusCodeWithHeaders)
+			if !ok {
+				coded = handler.NewError(req.Context, err)
+			}
+
+			coded.XRequestID = id
+			status = coded.StatusCode
+		} else if headers, ok := response.Type.(interface{ SetXRequestID(uuid.UUID) }); ok {
+			headers.SetXRequestID(id)
+		}
 
 		if logger != nil {
-			logger.InfoContext(ctx, "http request completed",
-				append(append([]any{"event", "http.request_completed"}, requestcontext.BuildAttributes(ctx)...),
-					"status_code", recorder.getStatusCode(), "duration_ms", float64(time.Since(started))/float64(time.Millisecond))...)
+			logger.InfoContext(req.Context, "http request completed", append(
+				append([]any{"event", "http.request_completed"}, attrs...),
+				"status_code", status, "duration_ms", float64(time.Since(started))/float64(time.Millisecond),
+			)...)
+
+			if status >= http.StatusInternalServerError && err != nil {
+				logger.ErrorContext(req.Context, "http request failed", append(
+					append([]any{"event", "http.request_failed"}, attrs...),
+					"status_code", status, "error", err,
+				)...)
+			}
 		}
-	})
-}
 
-type responseRecorder struct {
-	http.ResponseWriter
-	status int
-}
+		if err != nil {
+			return response, coded
+		}
 
-func (w *responseRecorder) WriteHeader(status int) {
-	if w.status == 0 && status >= http.StatusOK {
-		w.status = status
+		return response, nil
 	}
-
-	w.ResponseWriter.WriteHeader(status)
 }
 
-func (w *responseRecorder) Write(data []byte) (int, error) {
-	if w.status == 0 {
-		w.status = http.StatusOK
-	}
-
-	n, err := w.ResponseWriter.Write(data)
+func getRequestID(header http.Header) uuid.UUID {
+	id, err := uuid.Parse(header.Get(_requestIDHeader))
 	if err != nil {
-		return n, fmt.Errorf("write HTTP response: %w", err)
+		return uuid.New()
 	}
 
-	return n, nil
-}
-
-func (w *responseRecorder) Unwrap() http.ResponseWriter {
-	return w.ResponseWriter
-}
-
-func (w *responseRecorder) FlushError() error {
-	if w.status == 0 {
-		w.status = http.StatusOK
-	}
-
-	if err := http.NewResponseController(w.ResponseWriter).Flush(); err != nil {
-		return fmt.Errorf("flush HTTP response: %w", err)
-	}
-
-	return nil
-}
-
-func (w *responseRecorder) getStatusCode() int {
-	if w.status == 0 {
-		return http.StatusOK
-	}
-
-	return w.status
+	return id
 }

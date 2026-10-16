@@ -7,8 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	core "bookshop/frontend/internal/adapters/httpcore"
-	publisherhttp "bookshop/frontend/internal/adapters/publishers/http"
+	apiClient "bookshop/frontend/internal/adapters/api"
 	"bookshop/frontend/internal/domain/publishers/entities"
 
 	"github.com/google/uuid"
@@ -30,6 +29,8 @@ func TestPublisherOperations(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set("X-Request-ID", "51aa5ea3-0653-49ad-a3b5-e4c3b7ade70c")
 				require.Equal(t, tt.method, r.Method)
 				require.Equal(t, tt.path, r.URL.Path)
 				var sent entities.Publisher
@@ -43,11 +44,11 @@ func TestPublisherOperations(t *testing.T) {
 				_, _ = w.Write([]byte(`{"id":"` + id.String() + `","name":"Имя"}`))
 			}))
 			defer api.Close()
-			c := core.New(api.URL)
+			c, err := apiClient.New(api.URL)
+			require.NoError(t, err)
 			defer c.Stop()
-			s := Service{Publishers: &publisherhttp.Client{Core: c}}
+			s := Service{Publishers: c}
 			var saved entities.Publisher
-			var err error
 			if tt.method == "POST" {
 				saved, err = s.CreatePublisher(context.Background(), entities.Publisher{Name: " Имя "})
 			} else {

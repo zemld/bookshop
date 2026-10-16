@@ -31,43 +31,43 @@ type Invoker interface {
 	// CreateBook invokes createBook operation.
 	//
 	// POST /books
-	CreateBook(ctx context.Context, request *BookInput) (*Book, error)
+	CreateBook(ctx context.Context, request *BookInput) (*BookHeaders, error)
 	// CreatePublisher invokes createPublisher operation.
 	//
 	// POST /publishers
-	CreatePublisher(ctx context.Context, request *PublisherInput) (*Publisher, error)
+	CreatePublisher(ctx context.Context, request *PublisherInput) (*PublisherHeaders, error)
 	// DeleteBook invokes deleteBook operation.
 	//
 	// DELETE /books/{id}
-	DeleteBook(ctx context.Context, params DeleteBookParams) (*Deleted, error)
+	DeleteBook(ctx context.Context, params DeleteBookParams) (*DeletedHeaders, error)
 	// DeletePublisher invokes deletePublisher operation.
 	//
 	// DELETE /publishers/{id}
-	DeletePublisher(ctx context.Context, params DeletePublisherParams) (*Deleted, error)
+	DeletePublisher(ctx context.Context, params DeletePublisherParams) (*DeletedHeaders, error)
 	// GetBook invokes getBook operation.
 	//
 	// GET /books/{id}
-	GetBook(ctx context.Context, params GetBookParams) (*Book, error)
+	GetBook(ctx context.Context, params GetBookParams) (*BookHeaders, error)
 	// GetPublisher invokes getPublisher operation.
 	//
 	// GET /publishers/{id}
-	GetPublisher(ctx context.Context, params GetPublisherParams) (*Publisher, error)
+	GetPublisher(ctx context.Context, params GetPublisherParams) (*PublisherHeaders, error)
 	// ListBooks invokes listBooks operation.
 	//
 	// GET /books
-	ListBooks(ctx context.Context) ([]Book, error)
+	ListBooks(ctx context.Context) (*ListBooksOKHeaders, error)
 	// ListPublishers invokes listPublishers operation.
 	//
 	// GET /publishers
-	ListPublishers(ctx context.Context) ([]Publisher, error)
+	ListPublishers(ctx context.Context) (*ListPublishersOKHeaders, error)
 	// UpdateBook invokes updateBook operation.
 	//
 	// PUT /books/{id}
-	UpdateBook(ctx context.Context, request *BookInput, params UpdateBookParams) (*Book, error)
+	UpdateBook(ctx context.Context, request *BookInput, params UpdateBookParams) (*BookHeaders, error)
 	// UpdatePublisher invokes updatePublisher operation.
 	//
 	// PUT /publishers/{id}
-	UpdatePublisher(ctx context.Context, request *PublisherInput, params UpdatePublisherParams) (*Publisher, error)
+	UpdatePublisher(ctx context.Context, request *PublisherInput, params UpdatePublisherParams) (*PublisherHeaders, error)
 }
 
 // Client implements OAS client.
@@ -76,7 +76,7 @@ type Client struct {
 	baseClient
 }
 type errorHandler interface {
-	NewError(ctx context.Context, err error) *ErrorStatusCode
+	NewError(ctx context.Context, err error) *ErrorStatusCodeWithHeaders
 }
 
 var _ Handler = struct {
@@ -120,12 +120,12 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 // CreateBook invokes createBook operation.
 //
 // POST /books
-func (c *Client) CreateBook(ctx context.Context, request *BookInput) (*Book, error) {
+func (c *Client) CreateBook(ctx context.Context, request *BookInput) (*BookHeaders, error) {
 	res, err := c.sendCreateBook(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreateBook(ctx context.Context, request *BookInput) (res *Book, err error) {
+func (c *Client) sendCreateBook(ctx context.Context, request *BookInput) (res *BookHeaders, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("createBook"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -193,12 +193,12 @@ func (c *Client) sendCreateBook(ctx context.Context, request *BookInput) (res *B
 // CreatePublisher invokes createPublisher operation.
 //
 // POST /publishers
-func (c *Client) CreatePublisher(ctx context.Context, request *PublisherInput) (*Publisher, error) {
+func (c *Client) CreatePublisher(ctx context.Context, request *PublisherInput) (*PublisherHeaders, error) {
 	res, err := c.sendCreatePublisher(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreatePublisher(ctx context.Context, request *PublisherInput) (res *Publisher, err error) {
+func (c *Client) sendCreatePublisher(ctx context.Context, request *PublisherInput) (res *PublisherHeaders, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("createPublisher"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -266,12 +266,12 @@ func (c *Client) sendCreatePublisher(ctx context.Context, request *PublisherInpu
 // DeleteBook invokes deleteBook operation.
 //
 // DELETE /books/{id}
-func (c *Client) DeleteBook(ctx context.Context, params DeleteBookParams) (*Deleted, error) {
+func (c *Client) DeleteBook(ctx context.Context, params DeleteBookParams) (*DeletedHeaders, error) {
 	res, err := c.sendDeleteBook(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDeleteBook(ctx context.Context, params DeleteBookParams) (res *Deleted, err error) {
+func (c *Client) sendDeleteBook(ctx context.Context, params DeleteBookParams) (res *DeletedHeaders, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("deleteBook"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
@@ -354,12 +354,12 @@ func (c *Client) sendDeleteBook(ctx context.Context, params DeleteBookParams) (r
 // DeletePublisher invokes deletePublisher operation.
 //
 // DELETE /publishers/{id}
-func (c *Client) DeletePublisher(ctx context.Context, params DeletePublisherParams) (*Deleted, error) {
+func (c *Client) DeletePublisher(ctx context.Context, params DeletePublisherParams) (*DeletedHeaders, error) {
 	res, err := c.sendDeletePublisher(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDeletePublisher(ctx context.Context, params DeletePublisherParams) (res *Deleted, err error) {
+func (c *Client) sendDeletePublisher(ctx context.Context, params DeletePublisherParams) (res *DeletedHeaders, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("deletePublisher"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
@@ -442,12 +442,12 @@ func (c *Client) sendDeletePublisher(ctx context.Context, params DeletePublisher
 // GetBook invokes getBook operation.
 //
 // GET /books/{id}
-func (c *Client) GetBook(ctx context.Context, params GetBookParams) (*Book, error) {
+func (c *Client) GetBook(ctx context.Context, params GetBookParams) (*BookHeaders, error) {
 	res, err := c.sendGetBook(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetBook(ctx context.Context, params GetBookParams) (res *Book, err error) {
+func (c *Client) sendGetBook(ctx context.Context, params GetBookParams) (res *BookHeaders, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("getBook"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -530,12 +530,12 @@ func (c *Client) sendGetBook(ctx context.Context, params GetBookParams) (res *Bo
 // GetPublisher invokes getPublisher operation.
 //
 // GET /publishers/{id}
-func (c *Client) GetPublisher(ctx context.Context, params GetPublisherParams) (*Publisher, error) {
+func (c *Client) GetPublisher(ctx context.Context, params GetPublisherParams) (*PublisherHeaders, error) {
 	res, err := c.sendGetPublisher(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetPublisher(ctx context.Context, params GetPublisherParams) (res *Publisher, err error) {
+func (c *Client) sendGetPublisher(ctx context.Context, params GetPublisherParams) (res *PublisherHeaders, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("getPublisher"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -618,12 +618,12 @@ func (c *Client) sendGetPublisher(ctx context.Context, params GetPublisherParams
 // ListBooks invokes listBooks operation.
 //
 // GET /books
-func (c *Client) ListBooks(ctx context.Context) ([]Book, error) {
+func (c *Client) ListBooks(ctx context.Context) (*ListBooksOKHeaders, error) {
 	res, err := c.sendListBooks(ctx)
 	return res, err
 }
 
-func (c *Client) sendListBooks(ctx context.Context) (res []Book, err error) {
+func (c *Client) sendListBooks(ctx context.Context) (res *ListBooksOKHeaders, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("listBooks"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -688,12 +688,12 @@ func (c *Client) sendListBooks(ctx context.Context) (res []Book, err error) {
 // ListPublishers invokes listPublishers operation.
 //
 // GET /publishers
-func (c *Client) ListPublishers(ctx context.Context) ([]Publisher, error) {
+func (c *Client) ListPublishers(ctx context.Context) (*ListPublishersOKHeaders, error) {
 	res, err := c.sendListPublishers(ctx)
 	return res, err
 }
 
-func (c *Client) sendListPublishers(ctx context.Context) (res []Publisher, err error) {
+func (c *Client) sendListPublishers(ctx context.Context) (res *ListPublishersOKHeaders, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("listPublishers"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -758,12 +758,12 @@ func (c *Client) sendListPublishers(ctx context.Context) (res []Publisher, err e
 // UpdateBook invokes updateBook operation.
 //
 // PUT /books/{id}
-func (c *Client) UpdateBook(ctx context.Context, request *BookInput, params UpdateBookParams) (*Book, error) {
+func (c *Client) UpdateBook(ctx context.Context, request *BookInput, params UpdateBookParams) (*BookHeaders, error) {
 	res, err := c.sendUpdateBook(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendUpdateBook(ctx context.Context, request *BookInput, params UpdateBookParams) (res *Book, err error) {
+func (c *Client) sendUpdateBook(ctx context.Context, request *BookInput, params UpdateBookParams) (res *BookHeaders, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("updateBook"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
@@ -849,12 +849,12 @@ func (c *Client) sendUpdateBook(ctx context.Context, request *BookInput, params 
 // UpdatePublisher invokes updatePublisher operation.
 //
 // PUT /publishers/{id}
-func (c *Client) UpdatePublisher(ctx context.Context, request *PublisherInput, params UpdatePublisherParams) (*Publisher, error) {
+func (c *Client) UpdatePublisher(ctx context.Context, request *PublisherInput, params UpdatePublisherParams) (*PublisherHeaders, error) {
 	res, err := c.sendUpdatePublisher(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendUpdatePublisher(ctx context.Context, request *PublisherInput, params UpdatePublisherParams) (res *Publisher, err error) {
+func (c *Client) sendUpdatePublisher(ctx context.Context, request *PublisherInput, params UpdatePublisherParams) (res *PublisherHeaders, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("updatePublisher"),
 		semconv.HTTPRequestMethodKey.String("PUT"),

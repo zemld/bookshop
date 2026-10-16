@@ -11,47 +11,47 @@ type Handler interface {
 	// CreateBook implements createBook operation.
 	//
 	// POST /books
-	CreateBook(ctx context.Context, req *BookInput) (*Book, error)
+	CreateBook(ctx context.Context, req *BookInput) (*BookHeaders, error)
 	// CreatePublisher implements createPublisher operation.
 	//
 	// POST /publishers
-	CreatePublisher(ctx context.Context, req *PublisherInput) (*Publisher, error)
+	CreatePublisher(ctx context.Context, req *PublisherInput) (*PublisherHeaders, error)
 	// DeleteBook implements deleteBook operation.
 	//
 	// DELETE /books/{id}
-	DeleteBook(ctx context.Context, params DeleteBookParams) (*Deleted, error)
+	DeleteBook(ctx context.Context, params DeleteBookParams) (*DeletedHeaders, error)
 	// DeletePublisher implements deletePublisher operation.
 	//
 	// DELETE /publishers/{id}
-	DeletePublisher(ctx context.Context, params DeletePublisherParams) (*Deleted, error)
+	DeletePublisher(ctx context.Context, params DeletePublisherParams) (*DeletedHeaders, error)
 	// GetBook implements getBook operation.
 	//
 	// GET /books/{id}
-	GetBook(ctx context.Context, params GetBookParams) (*Book, error)
+	GetBook(ctx context.Context, params GetBookParams) (*BookHeaders, error)
 	// GetPublisher implements getPublisher operation.
 	//
 	// GET /publishers/{id}
-	GetPublisher(ctx context.Context, params GetPublisherParams) (*Publisher, error)
+	GetPublisher(ctx context.Context, params GetPublisherParams) (*PublisherHeaders, error)
 	// ListBooks implements listBooks operation.
 	//
 	// GET /books
-	ListBooks(ctx context.Context) ([]Book, error)
+	ListBooks(ctx context.Context) (*ListBooksOKHeaders, error)
 	// ListPublishers implements listPublishers operation.
 	//
 	// GET /publishers
-	ListPublishers(ctx context.Context) ([]Publisher, error)
+	ListPublishers(ctx context.Context) (*ListPublishersOKHeaders, error)
 	// UpdateBook implements updateBook operation.
 	//
 	// PUT /books/{id}
-	UpdateBook(ctx context.Context, req *BookInput, params UpdateBookParams) (*Book, error)
+	UpdateBook(ctx context.Context, req *BookInput, params UpdateBookParams) (*BookHeaders, error)
 	// UpdatePublisher implements updatePublisher operation.
 	//
 	// PUT /publishers/{id}
-	UpdatePublisher(ctx context.Context, req *PublisherInput, params UpdatePublisherParams) (*Publisher, error)
-	// NewError creates *ErrorStatusCode from error returned by handler.
+	UpdatePublisher(ctx context.Context, req *PublisherInput, params UpdatePublisherParams) (*PublisherHeaders, error)
+	// NewError creates *ErrorStatusCodeWithHeaders from error returned by handler.
 	//
 	// Used for common default response.
-	NewError(ctx context.Context, err error) *ErrorStatusCode
+	NewError(ctx context.Context, err error) *ErrorStatusCodeWithHeaders
 }
 
 // Server implements http server based on OpenAPI v3 specification and

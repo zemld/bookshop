@@ -3,10 +3,8 @@ package handler
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"net/http"
 
-	"bookshop/backend/internal/api/rest/handler/requestcontext"
 	"bookshop/backend/internal/api/rest/ogen"
 	"bookshop/backend/internal/domain/books"
 	bookentities "bookshop/backend/internal/domain/books/entities"
@@ -18,12 +16,11 @@ import (
 type Handler struct {
 	Books      books.Books
 	Publishers publishers.Publishers
-	Logger     *slog.Logger
 }
 
 var _ ogen.Handler = Handler{}
 
-const deletedStatus = "deleted"
+const _deletedStatus = "deleted"
 
 func classifyError(err error) (int, ogen.ProblemError) {
 	switch {
@@ -64,16 +61,12 @@ func identifyError(err error, category ogen.ProblemError) ogen.ProblemError {
 	return category
 }
 
-func (h Handler) NewError(ctx context.Context, err error) *ogen.ErrorStatusCode {
+func (h Handler) NewError(_ context.Context, err error) *ogen.ErrorStatusCodeWithHeaders {
 	code, category := classifyError(err)
-	if code == http.StatusInternalServerError && h.Logger != nil {
-		h.Logger.ErrorContext(ctx, "http request failed",
-			append(append([]any{"event", "http.request_failed"}, requestcontext.BuildAttributes(ctx)...), "status_code", code, "error", err)...)
-	}
 
 	if code != http.StatusInternalServerError {
 		category = identifyError(err, category)
 	}
 
-	return &ogen.ErrorStatusCode{StatusCode: code, Response: ogen.Problem{Error: category}}
+	return &ogen.ErrorStatusCodeWithHeaders{StatusCode: code, Response: ogen.Problem{Error: category}}
 }

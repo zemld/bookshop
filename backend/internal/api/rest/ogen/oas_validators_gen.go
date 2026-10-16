@@ -8,7 +8,7 @@ import (
 	"github.com/ogen-go/ogen/validate"
 )
 
-func (s *ErrorStatusCode) Validate() error {
+func (s *ErrorStatusCodeWithHeaders) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
@@ -17,6 +17,52 @@ func (s *ErrorStatusCode) Validate() error {
 	if err := func() error {
 		if err := s.Response.Validate(); err != nil {
 			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "Response",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s *ListBooksOKHeaders) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if s.Response == nil {
+			return errors.New("nil is invalid value")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "Response",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s *ListPublishersOKHeaders) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if s.Response == nil {
+			return errors.New("nil is invalid value")
 		}
 		return nil
 	}(); err != nil {

@@ -10,16 +10,34 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/ogen-go/ogen/conv"
 	ht "github.com/ogen-go/ogen/http"
+	"github.com/ogen-go/ogen/uri"
 )
 
-func encodeCreateBookResponse(response *Book, w http.ResponseWriter, span trace.Span) error {
+func encodeCreateBookResponse(response *BookHeaders, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	// Encoding response headers.
+	{
+		h := uri.NewHeaderEncoder(w.Header())
+		// Encode "X-Request-ID" header.
+		{
+			cfg := uri.HeaderParameterEncodingConfig{
+				Name:    "X-Request-ID",
+				Explode: false,
+			}
+			if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+				return e.EncodeValue(conv.UUIDToString(response.XRequestID))
+			}); err != nil {
+				return errors.Wrap(err, "encode X-Request-ID header")
+			}
+		}
+	}
 	w.WriteHeader(200)
 	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
-	response.Encode(e)
+	response.Response.Encode(e)
 	if _, err := e.WriteTo(w); err != nil {
 		return errors.Wrap(err, "write")
 	}
@@ -27,13 +45,29 @@ func encodeCreateBookResponse(response *Book, w http.ResponseWriter, span trace.
 	return nil
 }
 
-func encodeCreatePublisherResponse(response *Publisher, w http.ResponseWriter, span trace.Span) error {
+func encodeCreatePublisherResponse(response *PublisherHeaders, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	// Encoding response headers.
+	{
+		h := uri.NewHeaderEncoder(w.Header())
+		// Encode "X-Request-ID" header.
+		{
+			cfg := uri.HeaderParameterEncodingConfig{
+				Name:    "X-Request-ID",
+				Explode: false,
+			}
+			if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+				return e.EncodeValue(conv.UUIDToString(response.XRequestID))
+			}); err != nil {
+				return errors.Wrap(err, "encode X-Request-ID header")
+			}
+		}
+	}
 	w.WriteHeader(200)
 	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
-	response.Encode(e)
+	response.Response.Encode(e)
 	if _, err := e.WriteTo(w); err != nil {
 		return errors.Wrap(err, "write")
 	}
@@ -41,13 +75,29 @@ func encodeCreatePublisherResponse(response *Publisher, w http.ResponseWriter, s
 	return nil
 }
 
-func encodeDeleteBookResponse(response *Deleted, w http.ResponseWriter, span trace.Span) error {
+func encodeDeleteBookResponse(response *DeletedHeaders, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	// Encoding response headers.
+	{
+		h := uri.NewHeaderEncoder(w.Header())
+		// Encode "X-Request-ID" header.
+		{
+			cfg := uri.HeaderParameterEncodingConfig{
+				Name:    "X-Request-ID",
+				Explode: false,
+			}
+			if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+				return e.EncodeValue(conv.UUIDToString(response.XRequestID))
+			}); err != nil {
+				return errors.Wrap(err, "encode X-Request-ID header")
+			}
+		}
+	}
 	w.WriteHeader(200)
 	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
-	response.Encode(e)
+	response.Response.Encode(e)
 	if _, err := e.WriteTo(w); err != nil {
 		return errors.Wrap(err, "write")
 	}
@@ -55,13 +105,29 @@ func encodeDeleteBookResponse(response *Deleted, w http.ResponseWriter, span tra
 	return nil
 }
 
-func encodeDeletePublisherResponse(response *Deleted, w http.ResponseWriter, span trace.Span) error {
+func encodeDeletePublisherResponse(response *DeletedHeaders, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	// Encoding response headers.
+	{
+		h := uri.NewHeaderEncoder(w.Header())
+		// Encode "X-Request-ID" header.
+		{
+			cfg := uri.HeaderParameterEncodingConfig{
+				Name:    "X-Request-ID",
+				Explode: false,
+			}
+			if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+				return e.EncodeValue(conv.UUIDToString(response.XRequestID))
+			}); err != nil {
+				return errors.Wrap(err, "encode X-Request-ID header")
+			}
+		}
+	}
 	w.WriteHeader(200)
 	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
-	response.Encode(e)
+	response.Response.Encode(e)
 	if _, err := e.WriteTo(w); err != nil {
 		return errors.Wrap(err, "write")
 	}
@@ -69,13 +135,29 @@ func encodeDeletePublisherResponse(response *Deleted, w http.ResponseWriter, spa
 	return nil
 }
 
-func encodeGetBookResponse(response *Book, w http.ResponseWriter, span trace.Span) error {
+func encodeGetBookResponse(response *BookHeaders, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	// Encoding response headers.
+	{
+		h := uri.NewHeaderEncoder(w.Header())
+		// Encode "X-Request-ID" header.
+		{
+			cfg := uri.HeaderParameterEncodingConfig{
+				Name:    "X-Request-ID",
+				Explode: false,
+			}
+			if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+				return e.EncodeValue(conv.UUIDToString(response.XRequestID))
+			}); err != nil {
+				return errors.Wrap(err, "encode X-Request-ID header")
+			}
+		}
+	}
 	w.WriteHeader(200)
 	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
-	response.Encode(e)
+	response.Response.Encode(e)
 	if _, err := e.WriteTo(w); err != nil {
 		return errors.Wrap(err, "write")
 	}
@@ -83,13 +165,29 @@ func encodeGetBookResponse(response *Book, w http.ResponseWriter, span trace.Spa
 	return nil
 }
 
-func encodeGetPublisherResponse(response *Publisher, w http.ResponseWriter, span trace.Span) error {
+func encodeGetPublisherResponse(response *PublisherHeaders, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	// Encoding response headers.
+	{
+		h := uri.NewHeaderEncoder(w.Header())
+		// Encode "X-Request-ID" header.
+		{
+			cfg := uri.HeaderParameterEncodingConfig{
+				Name:    "X-Request-ID",
+				Explode: false,
+			}
+			if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+				return e.EncodeValue(conv.UUIDToString(response.XRequestID))
+			}); err != nil {
+				return errors.Wrap(err, "encode X-Request-ID header")
+			}
+		}
+	}
 	w.WriteHeader(200)
 	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
-	response.Encode(e)
+	response.Response.Encode(e)
 	if _, err := e.WriteTo(w); err != nil {
 		return errors.Wrap(err, "write")
 	}
@@ -97,14 +195,30 @@ func encodeGetPublisherResponse(response *Publisher, w http.ResponseWriter, span
 	return nil
 }
 
-func encodeListBooksResponse(response []Book, w http.ResponseWriter, span trace.Span) error {
+func encodeListBooksResponse(response *ListBooksOKHeaders, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	// Encoding response headers.
+	{
+		h := uri.NewHeaderEncoder(w.Header())
+		// Encode "X-Request-ID" header.
+		{
+			cfg := uri.HeaderParameterEncodingConfig{
+				Name:    "X-Request-ID",
+				Explode: false,
+			}
+			if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+				return e.EncodeValue(conv.UUIDToString(response.XRequestID))
+			}); err != nil {
+				return errors.Wrap(err, "encode X-Request-ID header")
+			}
+		}
+	}
 	w.WriteHeader(200)
 	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	e.ArrStart()
-	for _, elem := range response {
+	for _, elem := range response.Response {
 		elem.Encode(e)
 	}
 	e.ArrEnd()
@@ -115,14 +229,30 @@ func encodeListBooksResponse(response []Book, w http.ResponseWriter, span trace.
 	return nil
 }
 
-func encodeListPublishersResponse(response []Publisher, w http.ResponseWriter, span trace.Span) error {
+func encodeListPublishersResponse(response *ListPublishersOKHeaders, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	// Encoding response headers.
+	{
+		h := uri.NewHeaderEncoder(w.Header())
+		// Encode "X-Request-ID" header.
+		{
+			cfg := uri.HeaderParameterEncodingConfig{
+				Name:    "X-Request-ID",
+				Explode: false,
+			}
+			if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+				return e.EncodeValue(conv.UUIDToString(response.XRequestID))
+			}); err != nil {
+				return errors.Wrap(err, "encode X-Request-ID header")
+			}
+		}
+	}
 	w.WriteHeader(200)
 	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	e.ArrStart()
-	for _, elem := range response {
+	for _, elem := range response.Response {
 		elem.Encode(e)
 	}
 	e.ArrEnd()
@@ -133,13 +263,29 @@ func encodeListPublishersResponse(response []Publisher, w http.ResponseWriter, s
 	return nil
 }
 
-func encodeUpdateBookResponse(response *Book, w http.ResponseWriter, span trace.Span) error {
+func encodeUpdateBookResponse(response *BookHeaders, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	// Encoding response headers.
+	{
+		h := uri.NewHeaderEncoder(w.Header())
+		// Encode "X-Request-ID" header.
+		{
+			cfg := uri.HeaderParameterEncodingConfig{
+				Name:    "X-Request-ID",
+				Explode: false,
+			}
+			if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+				return e.EncodeValue(conv.UUIDToString(response.XRequestID))
+			}); err != nil {
+				return errors.Wrap(err, "encode X-Request-ID header")
+			}
+		}
+	}
 	w.WriteHeader(200)
 	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
-	response.Encode(e)
+	response.Response.Encode(e)
 	if _, err := e.WriteTo(w); err != nil {
 		return errors.Wrap(err, "write")
 	}
@@ -147,13 +293,29 @@ func encodeUpdateBookResponse(response *Book, w http.ResponseWriter, span trace.
 	return nil
 }
 
-func encodeUpdatePublisherResponse(response *Publisher, w http.ResponseWriter, span trace.Span) error {
+func encodeUpdatePublisherResponse(response *PublisherHeaders, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	// Encoding response headers.
+	{
+		h := uri.NewHeaderEncoder(w.Header())
+		// Encode "X-Request-ID" header.
+		{
+			cfg := uri.HeaderParameterEncodingConfig{
+				Name:    "X-Request-ID",
+				Explode: false,
+			}
+			if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+				return e.EncodeValue(conv.UUIDToString(response.XRequestID))
+			}); err != nil {
+				return errors.Wrap(err, "encode X-Request-ID header")
+			}
+		}
+	}
 	w.WriteHeader(200)
 	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
-	response.Encode(e)
+	response.Response.Encode(e)
 	if _, err := e.WriteTo(w); err != nil {
 		return errors.Wrap(err, "write")
 	}
@@ -161,8 +323,24 @@ func encodeUpdatePublisherResponse(response *Publisher, w http.ResponseWriter, s
 	return nil
 }
 
-func encodeErrorResponse(response *ErrorStatusCode, w http.ResponseWriter, span trace.Span) error {
+func encodeErrorResponse(response *ErrorStatusCodeWithHeaders, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	// Encoding response headers.
+	{
+		h := uri.NewHeaderEncoder(w.Header())
+		// Encode "X-Request-ID" header.
+		{
+			cfg := uri.HeaderParameterEncodingConfig{
+				Name:    "X-Request-ID",
+				Explode: false,
+			}
+			if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+				return e.EncodeValue(conv.UUIDToString(response.XRequestID))
+			}); err != nil {
+				return errors.Wrap(err, "encode X-Request-ID header")
+			}
+		}
+	}
 	code := response.StatusCode
 	if code == 0 {
 		// Set default status code.

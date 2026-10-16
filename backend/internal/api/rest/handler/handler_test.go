@@ -1,16 +1,13 @@
 package handler
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"bookshop/backend/internal/api/rest/handler/requestcontext"
 	"bookshop/backend/internal/api/rest/server"
 	bookentities "bookshop/backend/internal/domain/books/entities"
 	publisherentities "bookshop/backend/internal/domain/publishers/entities"
@@ -46,6 +43,7 @@ func TestRejectInvalidRequest(t *testing.T) {
 			res := httptest.NewRecorder()
 			api.ServeHTTP(res, req)
 			require.Equal(t, 400, res.Code)
+			require.NotEmpty(t, res.Header().Get("X-Request-ID"))
 			require.JSONEq(t, tc.want, res.Body.String())
 		})
 	}
@@ -140,24 +138,9 @@ func TestMapDomainAndDatabaseErrorsToProblem(t *testing.T) {
 		{"internal", errors.New("private database error"), 500, "internal_error"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			var output bytes.Buffer
-
-			logger := slog.New(slog.NewJSONHandler(&output, nil))
-			ctx := requestcontext.WithRequest(context.Background(), "request", "GET", "/books/{id}")
-			response := (Handler{Logger: logger}).NewError(ctx, fmt.Errorf("operation: %w", tc.err))
+			response := (Handler{}).NewError(context.Background(), fmt.Errorf("operation: %w", tc.err))
 			require.Equal(t, tc.status, response.StatusCode)
 			require.Equal(t, tc.wireCode, string(response.Response.Error))
-
-			if tc.status != 500 {
-				require.Empty(t, output.String())
-				return
-			}
-
-			require.Contains(t, output.String(), `"event":"http.request_failed"`)
-			require.Contains(t, output.String(), `"request_id":"request"`)
-			require.Contains(t, output.String(), `"route":"/books/{id}"`)
-			require.Contains(t, output.String(), `"status_code":500`)
-			require.Contains(t, output.String(), tc.err.Error())
 		})
 	}
 }

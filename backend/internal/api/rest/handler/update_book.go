@@ -8,7 +8,7 @@ import (
 	"bookshop/backend/internal/api/rest/ogen"
 )
 
-func (h Handler) UpdateBook(ctx context.Context, req *ogen.BookInput, params ogen.UpdateBookParams) (*ogen.Book, error) {
+func (h Handler) UpdateBook(ctx context.Context, req *ogen.BookInput, params ogen.UpdateBookParams) (*ogen.BookHeaders, error) {
 	b := convert.ConvertToDomainBook(req)
 	b.ID = params.ID
 
@@ -17,7 +17,5 @@ func (h Handler) UpdateBook(ctx context.Context, req *ogen.BookInput, params oge
 		return nil, fmt.Errorf("update book: %w", err)
 	}
 
-	value := convert.ConvertToOgenBook(updated)
-
-	return &value, nil
+	return &ogen.BookHeaders{Response: convert.ConvertToOgenBook(updated)}, nil
 }
