@@ -15,6 +15,12 @@ collector:
     - ts
     - timestamp
 
+persistence:
+  volume:
+    hostPath:
+      path: /var/lib/vl-collector
+      type: DirectoryOrCreate
+
 resources:
   requests:
     cpu: 50m
