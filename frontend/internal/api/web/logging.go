@@ -10,7 +10,7 @@ import (
 
 const _requestIDHeader = "X-Request-ID"
 
-func logRequests(mux *http.ServeMux, logger *slog.Logger) http.Handler {
+func NewRequestLoggingMiddleware(mux *http.ServeMux, logger *slog.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		started := time.Now()
 		id := uuid.NewString()

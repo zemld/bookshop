@@ -32,5 +32,5 @@ func (s Server) CreateHandler() http.Handler {
 	})
 	s.registerPublisherRoutes(m)
 	s.registerBookRoutes(m)
-	return logRequests(m, s.Logger)
+	return NewRequestLoggingMiddleware(m, s.Logger)
 }

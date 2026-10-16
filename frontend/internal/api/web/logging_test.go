@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLogRequests(t *testing.T) {
+func TestNewRequestLoggingMiddleware(t *testing.T) {
 	var output bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&output, nil)).With("service", "bookshop-web")
 	mux := http.NewServeMux()
@@ -33,7 +33,7 @@ func TestLogRequests(t *testing.T) {
 		require.NoError(t, http.NewResponseController(w).Flush())
 		w.WriteHeader(http.StatusInternalServerError)
 	})
-	handler := logRequests(mux, logger)
+	handler := NewRequestLoggingMiddleware(mux, logger)
 	assetHandler := (Server{Logger: logger}).CreateHandler()
 	for _, tc := range []struct {
 		name       string
@@ -61,7 +61,7 @@ func TestLogRequests(t *testing.T) {
 			concurrentMux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 				require.Equal(t, w.Header().Get("X-Request-ID"), api.GetRequestID(r.Context()))
 			})
-			concurrentHandler := logRequests(concurrentMux, slog.New(slog.NewJSONHandler(io.Discard, nil)))
+			concurrentHandler := NewRequestLoggingMiddleware(concurrentMux, slog.New(slog.NewJSONHandler(io.Discard, nil)))
 			var wg sync.WaitGroup
 			ids := make(chan string, 20)
 			for range 20 {
