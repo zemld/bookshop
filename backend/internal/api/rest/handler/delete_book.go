@@ -7,10 +7,10 @@ import (
 	"bookshop/backend/internal/api/rest/ogen"
 )
 
-func (h Handler) DeleteBook(ctx context.Context, params ogen.DeleteBookParams) (*ogen.Deleted, error) {
+func (h Handler) DeleteBook(ctx context.Context, params ogen.DeleteBookParams) (*ogen.DeletedHeaders, error) {
 	if err := h.Books.DeleteBook(ctx, params.ID); err != nil {
 		return nil, fmt.Errorf("delete book: %w", err)
 	}
 
-	return &ogen.Deleted{Status: deletedStatus}, nil
+	return &ogen.DeletedHeaders{Response: ogen.Deleted{Status: _deletedStatus}}, nil
 }

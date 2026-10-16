@@ -6,9 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	bookhttp "bookshop/frontend/internal/adapters/books/http"
-	core "bookshop/frontend/internal/adapters/httpcore"
-	publisherhttp "bookshop/frontend/internal/adapters/publishers/http"
+	apiClient "bookshop/frontend/internal/adapters/api"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -30,6 +28,8 @@ func TestLoadBookForm(t *testing.T) {
 			t.Parallel()
 			calls := 0
 			api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set("X-Request-ID", "51aa5ea3-0653-49ad-a3b5-e4c3b7ade70c")
 				calls++
 				if calls == 1 {
 					require.Equal(t, "/publishers", r.URL.Path)
@@ -43,13 +43,14 @@ func TestLoadBookForm(t *testing.T) {
 					_, _ = w.Write([]byte(`[{"id":"` + id.String() + `","name":"Имя"}]`))
 				} else {
 					require.Equal(t, "/books/"+id.String(), r.URL.Path)
-					_, _ = w.Write([]byte(`{"id":"` + id.String() + `","year":2000}`))
+					_, _ = w.Write([]byte(`{"id":"` + id.String() + `","author":"Автор","name":"Книга","year":2000,"price":1,"publisherId":"` + id.String() + `","publicationYear":2001,"quantity":2}`))
 				}
 			}))
 			defer api.Close()
-			c := core.New(api.URL)
+			c, err := apiClient.New(api.URL)
+			require.NoError(t, err)
 			defer c.Stop()
-			s := Service{Books: &bookhttp.Client{Core: c}, Publishers: &publisherhttp.Client{Core: c}}
+			s := Service{Books: c, Publishers: c}
 			form, err := s.LoadBookForm(context.Background(), id)
 			require.Equal(t, tt.wantCalls, calls)
 			if tt.failAt != "" {

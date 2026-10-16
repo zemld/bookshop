@@ -170,6 +170,7 @@ func TestPublisherSaveHTMXAndFallback(t *testing.T) {
 		require.Equal(t, "POST", r.Method)
 		require.Equal(t, "/publishers", r.URL.Path)
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Request-ID", r.Header.Get("X-Request-ID"))
 		_, _ = w.Write([]byte(`{"id":"` + testID + `","name":"Книга"}`))
 	}))
 	t.Cleanup(api.Close)

@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net"
 	"net/http"
 )
@@ -11,10 +12,15 @@ type HTTPServer struct {
 	server   *http.Server
 	listener net.Listener
 	done     chan error
+	logger   *slog.Logger
 }
 
 func NewHTTPServer(addr string, handler http.Handler) *HTTPServer {
 	return &HTTPServer{server: &http.Server{Addr: addr, Handler: handler}}
+}
+
+func (s *HTTPServer) SetLogger(logger *slog.Logger) {
+	s.logger = logger
 }
 
 func (s *HTTPServer) Start(context.Context) error {
@@ -24,7 +30,13 @@ func (s *HTTPServer) Start(context.Context) error {
 	}
 	s.listener = listener
 	s.done = make(chan error, 1)
-	go func() { s.done <- s.server.Serve(listener) }()
+	go func() {
+		err := s.server.Serve(listener)
+		if err != nil && !errors.Is(err, http.ErrServerClosed) && s.logger != nil {
+			s.logger.Error("web listener failed", "event", "http.listener_failed", "address", s.server.Addr, "error", err)
+		}
+		s.done <- err
+	}()
 	return nil
 }
 

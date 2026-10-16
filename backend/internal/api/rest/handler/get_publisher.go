@@ -8,13 +8,11 @@ import (
 	"bookshop/backend/internal/api/rest/ogen"
 )
 
-func (h Handler) GetPublisher(ctx context.Context, params ogen.GetPublisherParams) (*ogen.Publisher, error) {
+func (h Handler) GetPublisher(ctx context.Context, params ogen.GetPublisherParams) (*ogen.PublisherHeaders, error) {
 	p, err := h.Publishers.GetPublisher(ctx, params.ID)
 	if err != nil {
 		return nil, fmt.Errorf("get publisher: %w", err)
 	}
 
-	value := convert.ConvertToOgenPublisher(p)
-
-	return &value, nil
+	return &ogen.PublisherHeaders{Response: convert.ConvertToOgenPublisher(p)}, nil
 }

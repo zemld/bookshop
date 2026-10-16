@@ -118,7 +118,7 @@ func (s *Server) handleCreateBookRequest(args [0]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response *Book
+	var response *BookHeaders
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -133,7 +133,7 @@ func (s *Server) handleCreateBookRequest(args [0]string, argsEscaped bool, w htt
 		type (
 			Request  = *BookInput
 			Params   = struct{}
-			Response = *Book
+			Response = *BookHeaders
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -152,7 +152,7 @@ func (s *Server) handleCreateBookRequest(args [0]string, argsEscaped bool, w htt
 		response, err = s.h.CreateBook(ctx, request)
 	}
 	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+		if errRes, ok := errors.Into[*ErrorStatusCodeWithHeaders](err); ok {
 			if err := encodeErrorResponse(errRes, w, span); err != nil {
 				defer recordError("Internal", err)
 			}
@@ -265,7 +265,7 @@ func (s *Server) handleCreatePublisherRequest(args [0]string, argsEscaped bool, 
 		}
 	}()
 
-	var response *Publisher
+	var response *PublisherHeaders
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -280,7 +280,7 @@ func (s *Server) handleCreatePublisherRequest(args [0]string, argsEscaped bool, 
 		type (
 			Request  = *PublisherInput
 			Params   = struct{}
-			Response = *Publisher
+			Response = *PublisherHeaders
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -299,7 +299,7 @@ func (s *Server) handleCreatePublisherRequest(args [0]string, argsEscaped bool, 
 		response, err = s.h.CreatePublisher(ctx, request)
 	}
 	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+		if errRes, ok := errors.Into[*ErrorStatusCodeWithHeaders](err); ok {
 			if err := encodeErrorResponse(errRes, w, span); err != nil {
 				defer recordError("Internal", err)
 			}
@@ -407,7 +407,7 @@ func (s *Server) handleDeleteBookRequest(args [1]string, argsEscaped bool, w htt
 		return
 	}
 
-	var response *Deleted
+	var response *DeletedHeaders
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -427,7 +427,7 @@ func (s *Server) handleDeleteBookRequest(args [1]string, argsEscaped bool, w htt
 		type (
 			Request  = struct{}
 			Params   = DeleteBookParams
-			Response = *Deleted
+			Response = *DeletedHeaders
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -446,7 +446,7 @@ func (s *Server) handleDeleteBookRequest(args [1]string, argsEscaped bool, w htt
 		response, err = s.h.DeleteBook(ctx, params)
 	}
 	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+		if errRes, ok := errors.Into[*ErrorStatusCodeWithHeaders](err); ok {
 			if err := encodeErrorResponse(errRes, w, span); err != nil {
 				defer recordError("Internal", err)
 			}
@@ -554,7 +554,7 @@ func (s *Server) handleDeletePublisherRequest(args [1]string, argsEscaped bool, 
 		return
 	}
 
-	var response *Deleted
+	var response *DeletedHeaders
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -574,7 +574,7 @@ func (s *Server) handleDeletePublisherRequest(args [1]string, argsEscaped bool, 
 		type (
 			Request  = struct{}
 			Params   = DeletePublisherParams
-			Response = *Deleted
+			Response = *DeletedHeaders
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -593,7 +593,7 @@ func (s *Server) handleDeletePublisherRequest(args [1]string, argsEscaped bool, 
 		response, err = s.h.DeletePublisher(ctx, params)
 	}
 	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+		if errRes, ok := errors.Into[*ErrorStatusCodeWithHeaders](err); ok {
 			if err := encodeErrorResponse(errRes, w, span); err != nil {
 				defer recordError("Internal", err)
 			}
@@ -701,7 +701,7 @@ func (s *Server) handleGetBookRequest(args [1]string, argsEscaped bool, w http.R
 		return
 	}
 
-	var response *Book
+	var response *BookHeaders
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -721,7 +721,7 @@ func (s *Server) handleGetBookRequest(args [1]string, argsEscaped bool, w http.R
 		type (
 			Request  = struct{}
 			Params   = GetBookParams
-			Response = *Book
+			Response = *BookHeaders
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -740,7 +740,7 @@ func (s *Server) handleGetBookRequest(args [1]string, argsEscaped bool, w http.R
 		response, err = s.h.GetBook(ctx, params)
 	}
 	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+		if errRes, ok := errors.Into[*ErrorStatusCodeWithHeaders](err); ok {
 			if err := encodeErrorResponse(errRes, w, span); err != nil {
 				defer recordError("Internal", err)
 			}
@@ -848,7 +848,7 @@ func (s *Server) handleGetPublisherRequest(args [1]string, argsEscaped bool, w h
 		return
 	}
 
-	var response *Publisher
+	var response *PublisherHeaders
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -868,7 +868,7 @@ func (s *Server) handleGetPublisherRequest(args [1]string, argsEscaped bool, w h
 		type (
 			Request  = struct{}
 			Params   = GetPublisherParams
-			Response = *Publisher
+			Response = *PublisherHeaders
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -887,7 +887,7 @@ func (s *Server) handleGetPublisherRequest(args [1]string, argsEscaped bool, w h
 		response, err = s.h.GetPublisher(ctx, params)
 	}
 	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+		if errRes, ok := errors.Into[*ErrorStatusCodeWithHeaders](err); ok {
 			if err := encodeErrorResponse(errRes, w, span); err != nil {
 				defer recordError("Internal", err)
 			}
@@ -981,7 +981,7 @@ func (s *Server) handleListBooksRequest(args [0]string, argsEscaped bool, w http
 		err error
 	)
 
-	var response []Book
+	var response *ListBooksOKHeaders
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -996,7 +996,7 @@ func (s *Server) handleListBooksRequest(args [0]string, argsEscaped bool, w http
 		type (
 			Request  = struct{}
 			Params   = struct{}
-			Response = []Book
+			Response = *ListBooksOKHeaders
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1015,7 +1015,7 @@ func (s *Server) handleListBooksRequest(args [0]string, argsEscaped bool, w http
 		response, err = s.h.ListBooks(ctx)
 	}
 	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+		if errRes, ok := errors.Into[*ErrorStatusCodeWithHeaders](err); ok {
 			if err := encodeErrorResponse(errRes, w, span); err != nil {
 				defer recordError("Internal", err)
 			}
@@ -1109,7 +1109,7 @@ func (s *Server) handleListPublishersRequest(args [0]string, argsEscaped bool, w
 		err error
 	)
 
-	var response []Publisher
+	var response *ListPublishersOKHeaders
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -1124,7 +1124,7 @@ func (s *Server) handleListPublishersRequest(args [0]string, argsEscaped bool, w
 		type (
 			Request  = struct{}
 			Params   = struct{}
-			Response = []Publisher
+			Response = *ListPublishersOKHeaders
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1143,7 +1143,7 @@ func (s *Server) handleListPublishersRequest(args [0]string, argsEscaped bool, w
 		response, err = s.h.ListPublishers(ctx)
 	}
 	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+		if errRes, ok := errors.Into[*ErrorStatusCodeWithHeaders](err); ok {
 			if err := encodeErrorResponse(errRes, w, span); err != nil {
 				defer recordError("Internal", err)
 			}
@@ -1266,7 +1266,7 @@ func (s *Server) handleUpdateBookRequest(args [1]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response *Book
+	var response *BookHeaders
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -1286,7 +1286,7 @@ func (s *Server) handleUpdateBookRequest(args [1]string, argsEscaped bool, w htt
 		type (
 			Request  = *BookInput
 			Params   = UpdateBookParams
-			Response = *Book
+			Response = *BookHeaders
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1305,7 +1305,7 @@ func (s *Server) handleUpdateBookRequest(args [1]string, argsEscaped bool, w htt
 		response, err = s.h.UpdateBook(ctx, request, params)
 	}
 	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+		if errRes, ok := errors.Into[*ErrorStatusCodeWithHeaders](err); ok {
 			if err := encodeErrorResponse(errRes, w, span); err != nil {
 				defer recordError("Internal", err)
 			}
@@ -1428,7 +1428,7 @@ func (s *Server) handleUpdatePublisherRequest(args [1]string, argsEscaped bool, 
 		}
 	}()
 
-	var response *Publisher
+	var response *PublisherHeaders
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -1448,7 +1448,7 @@ func (s *Server) handleUpdatePublisherRequest(args [1]string, argsEscaped bool, 
 		type (
 			Request  = *PublisherInput
 			Params   = UpdatePublisherParams
-			Response = *Publisher
+			Response = *PublisherHeaders
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1467,7 +1467,7 @@ func (s *Server) handleUpdatePublisherRequest(args [1]string, argsEscaped bool, 
 		response, err = s.h.UpdatePublisher(ctx, request, params)
 	}
 	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+		if errRes, ok := errors.Into[*ErrorStatusCodeWithHeaders](err); ok {
 			if err := encodeErrorResponse(errRes, w, span); err != nil {
 				defer recordError("Internal", err)
 			}

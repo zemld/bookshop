@@ -8,13 +8,11 @@ import (
 	"bookshop/backend/internal/api/rest/ogen"
 )
 
-func (h Handler) GetBook(ctx context.Context, params ogen.GetBookParams) (*ogen.Book, error) {
+func (h Handler) GetBook(ctx context.Context, params ogen.GetBookParams) (*ogen.BookHeaders, error) {
 	b, err := h.Books.GetBook(ctx, params.ID)
 	if err != nil {
 		return nil, fmt.Errorf("get book: %w", err)
 	}
 
-	value := convert.ConvertToOgenBook(b)
-
-	return &value, nil
+	return &ogen.BookHeaders{Response: convert.ConvertToOgenBook(b)}, nil
 }

@@ -7,6 +7,7 @@ import (
 	"bookshop/frontend/internal/domain/publishers"
 	bookports "bookshop/frontend/internal/ports/books"
 	publisherports "bookshop/frontend/internal/ports/publishers"
+	"log/slog"
 )
 
 type Server struct {
@@ -20,6 +21,7 @@ type Server struct {
 	UpdateBook      bookports.UpdateBook
 	CreatePublisher publishers.CreatePublisher
 	UpdatePublisher publishers.UpdatePublisher
+	Logger          *slog.Logger
 }
 
 func (s Server) CreateHandler() http.Handler {
@@ -30,5 +32,5 @@ func (s Server) CreateHandler() http.Handler {
 	})
 	s.registerPublisherRoutes(m)
 	s.registerBookRoutes(m)
-	return m
+	return NewRequestLoggingMiddleware(m, s.Logger)
 }

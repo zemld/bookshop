@@ -1,14 +1,17 @@
 package web
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
 
-	"bookshop/frontend/internal/adapters/httpcore"
+	"bookshop/frontend/internal/adapters/api"
 
 	"github.com/stretchr/testify/require"
 )
@@ -86,7 +89,7 @@ func TestClassifyPublicErrorUsesStatusAndLocalMessages(t *testing.T) {
 	} {
 		t.Run(fmt.Sprintf("%d/%s", tc.status, tc.code), func(t *testing.T) {
 			t.Parallel()
-			err := fmt.Errorf("save: %w", &httpcore.APIError{StatusCode: tc.status, Code: tc.code})
+			err := fmt.Errorf("save: %w", &api.APIError{StatusCode: tc.status, Code: tc.code})
 			status, message, fields := classifyPublicError(err)
 			require.Equal(t, tc.wantStatus, status)
 			require.Equal(t, tc.message, message)
@@ -95,7 +98,7 @@ func TestClassifyPublicErrorUsesStatusAndLocalMessages(t *testing.T) {
 	}
 }
 
-func TestRenderUnknownBackendCodeWithoutExposingIt(t *testing.T) {
+func TestRenderOutOfContractBackendCodeAsBadGateway(t *testing.T) {
 	t.Parallel()
 	for _, hx := range []string{"", "true"} {
 		t.Run("htmx="+hx, func(t *testing.T) {
@@ -111,10 +114,40 @@ func TestRenderUnknownBackendCodeWithoutExposingIt(t *testing.T) {
 			res := httptest.NewRecorder()
 			createTestHandler(api.URL).ServeHTTP(res, req)
 
-			require.Equal(t, http.StatusBadRequest, res.Code)
-			require.Contains(t, res.Body.String(), "Некорректный формат запроса.")
+			require.Equal(t, http.StatusBadGateway, res.Code)
+			require.Contains(t, res.Body.String(), "Не удалось выполнить запрос к серверу.")
 			require.NotContains(t, res.Body.String(), "private SQL")
 			require.Contains(t, res.Body.String(), `value="Издательство"`)
+		})
+	}
+}
+
+func TestLogUnexpectedError(t *testing.T) {
+	for _, tc := range []struct {
+		name, code string
+		status     int
+		wantLog    bool
+	}{
+		{name: "expected invalid input", status: 400, code: "invalid_input"},
+		{name: "expected not found", status: 404, code: "not_found"},
+		{name: "expected conflict", status: 409, code: "conflict"},
+		{name: "unexpected upstream failure", status: 500, code: "internal_error", wantLog: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var output bytes.Buffer
+			logger := slog.New(slog.NewJSONHandler(&output, nil))
+			ctx := attachRequest(context.Background(), testID, "POST", "POST /books")
+			logUnexpectedError(ctx, logger, &api.APIError{StatusCode: tc.status, Code: tc.code})
+			if !tc.wantLog {
+				require.Empty(t, output.String())
+				return
+			}
+			require.Contains(t, output.String(), `"event":"http.request_failed"`)
+			require.Contains(t, output.String(), `"request_id":"`+testID+`"`)
+			require.Contains(t, output.String(), `"route":"POST /books"`)
+			require.Contains(t, output.String(), `"status_code":502`)
+			require.Contains(t, output.String(), `"upstream_status_code":500`)
+			require.Contains(t, output.String(), `"error_code":"internal_error"`)
 		})
 	}
 }

@@ -9,6 +9,8 @@ paths:
       responses:
         '200':
           description: Publishers
+          headers:
+            X-Request-ID: { $ref: '#/components/headers/RequestID' }
           content:
             application/json:
               schema:
@@ -25,6 +27,8 @@ paths:
       responses:
         '200':
           description: Created publisher
+          headers:
+            X-Request-ID: { $ref: '#/components/headers/RequestID' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Publisher' }
@@ -37,6 +41,8 @@ paths:
       responses:
         '200':
           description: Publisher
+          headers:
+            X-Request-ID: { $ref: '#/components/headers/RequestID' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Publisher' }
@@ -51,6 +57,8 @@ paths:
       responses:
         '200':
           description: Updated publisher
+          headers:
+            X-Request-ID: { $ref: '#/components/headers/RequestID' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Publisher' }
@@ -60,6 +68,8 @@ paths:
       responses:
         '200':
           description: Deleted
+          headers:
+            X-Request-ID: { $ref: '#/components/headers/RequestID' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Deleted' }
@@ -70,6 +80,8 @@ paths:
       responses:
         '200':
           description: Books
+          headers:
+            X-Request-ID: { $ref: '#/components/headers/RequestID' }
           content:
             application/json:
               schema:
@@ -86,6 +98,8 @@ paths:
       responses:
         '200':
           description: Created book
+          headers:
+            X-Request-ID: { $ref: '#/components/headers/RequestID' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Book' }
@@ -98,6 +112,8 @@ paths:
       responses:
         '200':
           description: Book
+          headers:
+            X-Request-ID: { $ref: '#/components/headers/RequestID' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Book' }
@@ -112,6 +128,8 @@ paths:
       responses:
         '200':
           description: Updated book
+          headers:
+            X-Request-ID: { $ref: '#/components/headers/RequestID' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Book' }
@@ -121,11 +139,18 @@ paths:
       responses:
         '200':
           description: Deleted
+          headers:
+            X-Request-ID: { $ref: '#/components/headers/RequestID' }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Deleted' }
         default: { $ref: '#/components/responses/Error' }
 components:
+  headers:
+    RequestID:
+      description: Correlation ID for this request
+      required: true
+      schema: { type: string, format: uuid }
   parameters:
     ID:
       name: id
@@ -135,6 +160,8 @@ components:
   responses:
     Error:
       description: Request failed
+      headers:
+        X-Request-ID: { $ref: '#/components/headers/RequestID' }
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Problem' }

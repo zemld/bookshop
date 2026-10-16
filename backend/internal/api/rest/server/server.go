@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"bookshop/backend/internal/api/middleware"
 	"bookshop/backend/internal/api/rest/ogen"
 
 	"github.com/ogen-go/ogen/ogenerrors"
@@ -19,7 +20,7 @@ import (
 	"go.uber.org/fx"
 )
 
-const drainTimeout = 10 * time.Second
+const _drainTimeout = 10 * time.Second
 
 var decodedField = regexp.MustCompile(`decode field "([^"]+)"`)
 
@@ -82,13 +83,33 @@ func decodeFieldCode(name string) (ogen.ProblemError, bool) {
 		return "", false
 	}
 }
-func New(handler ogen.Handler) http.Handler {
-	server, err := ogen.NewServer(handler, ogen.WithErrorHandler(func(_ context.Context, w http.ResponseWriter, _ *http.Request, decodeErr error) {
+func New(handler ogen.Handler, logger *slog.Logger) http.Handler {
+	var (
+		server *ogen.Server
+		err    error
+	)
+
+	server, err = ogen.NewServer(handler, ogen.WithMiddleware(middleware.NewRequestLoggingMiddleware(&server, handler, logger)), ogen.WithErrorHandler(func(_ context.Context, w http.ResponseWriter, r *http.Request, decodeErr error) {
+		w.Header().Set(middleware.RequestIDHeader, middleware.GetRequestID(r.Header).String())
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusBadRequest)
 
 		problem := decodeProblem(decodeErr)
 		_ = json.NewEncoder(w).Encode(&problem)
+	}), ogen.WithNotFound(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set(middleware.RequestIDHeader, middleware.GetRequestID(r.Header).String())
+		http.NotFound(w, r)
+	}), ogen.WithMethodNotAllowed(func(w http.ResponseWriter, r *http.Request, allowed string) {
+		w.Header().Set(middleware.RequestIDHeader, middleware.GetRequestID(r.Header).String())
+
+		if r.Method == http.MethodOptions {
+			w.Header().Set("Access-Control-Allow-Methods", allowed)
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			w.WriteHeader(http.StatusNoContent)
+		} else {
+			w.Header().Set("Allow", allowed)
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
 	}))
 	if err != nil {
 		panic(err)
@@ -105,10 +126,12 @@ type Server struct {
 	http     *http.Server
 	listener net.Listener
 	done     chan error
+	logger   *slog.Logger
 }
 
-func NewServer(lifecycle fx.Lifecycle, cfg Config, handler ogen.Handler) *Server {
-	s := newServer(cfg.Address, New(handler))
+func NewServer(lifecycle fx.Lifecycle, cfg Config, handler ogen.Handler, logger *slog.Logger) *Server {
+	s := newServer(cfg.Address, New(handler, logger))
+	s.logger = logger
 	lifecycle.Append(fx.Hook{OnStart: s.Start, OnStop: s.Stop})
 
 	return s
@@ -130,7 +153,9 @@ func (s *Server) Start(context.Context) error {
 	go func() {
 		err := s.http.Serve(listener)
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("api listener stopped", "error", err)
+			if s.logger != nil {
+				s.logger.Error("api listener failed", "event", "http.listener_failed", "address", s.http.Addr, "error", err)
+			}
 		}
 
 		s.done <- err
@@ -140,7 +165,7 @@ func (s *Server) Start(context.Context) error {
 }
 
 func (s *Server) Stop(ctx context.Context) error {
-	drain, cancel := context.WithTimeout(ctx, drainTimeout)
+	drain, cancel := context.WithTimeout(ctx, _drainTimeout)
 	defer cancel()
 
 	err := s.http.Shutdown(drain)

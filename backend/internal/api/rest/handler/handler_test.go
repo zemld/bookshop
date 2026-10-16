@@ -21,7 +21,7 @@ import (
 )
 
 func TestRejectInvalidRequest(t *testing.T) {
-	api := server.New(Handler{Books: books.Service{}, Publishers: publishers.Service{}})
+	api := server.New(Handler{Books: books.Service{}, Publishers: publishers.Service{}}, nil)
 
 	for _, tc := range []struct {
 		name, method, path, body, contentType, want string
@@ -43,13 +43,14 @@ func TestRejectInvalidRequest(t *testing.T) {
 			res := httptest.NewRecorder()
 			api.ServeHTTP(res, req)
 			require.Equal(t, 400, res.Code)
+			require.NotEmpty(t, res.Header().Get("X-Request-ID"))
 			require.JSONEq(t, tc.want, res.Body.String())
 		})
 	}
 }
 
 func TestValidationResponseForCreateAndUpdate(t *testing.T) {
-	api := server.New(Handler{Books: books.Service{}})
+	api := server.New(Handler{Books: books.Service{}}, nil)
 
 	for _, path := range []struct{ method, path string }{
 		{"POST", "/books"}, {"PUT", "/books/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"},
@@ -72,7 +73,7 @@ func TestValidationResponseForCreateAndUpdate(t *testing.T) {
 }
 
 func TestDecodeFieldErrors(t *testing.T) {
-	api := server.New(Handler{})
+	api := server.New(Handler{}, nil)
 
 	for _, tc := range []struct{ body, want string }{
 		{`{"author":"A","name":"B"}`, "invalid_year"},
@@ -95,7 +96,7 @@ func TestDecodeFieldErrors(t *testing.T) {
 }
 
 func TestPublisherValidationResponseForCreateAndUpdate(t *testing.T) {
-	api := server.New(Handler{Publishers: publishers.Service{}})
+	api := server.New(Handler{Publishers: publishers.Service{}}, nil)
 
 	for _, tc := range []struct{ method, path string }{
 		{"POST", "/publishers"},

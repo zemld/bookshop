@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *ErrorStatusCode) Error() string {
+func (s *ErrorStatusCodeWithHeaders) Error() string {
 	return fmt.Sprintf("code %d: %+v", s.StatusCode, s.Response)
 }
 
@@ -104,6 +104,32 @@ func (s *Book) SetQuantity(val int64) {
 // SetID sets the value of ID.
 func (s *Book) SetID(val uuid.UUID) {
 	s.ID = val
+}
+
+// BookHeaders wraps Book with response headers.
+type BookHeaders struct {
+	XRequestID uuid.UUID
+	Response   Book
+}
+
+// GetXRequestID returns the value of XRequestID.
+func (s *BookHeaders) GetXRequestID() uuid.UUID {
+	return s.XRequestID
+}
+
+// GetResponse returns the value of Response.
+func (s *BookHeaders) GetResponse() Book {
+	return s.Response
+}
+
+// SetXRequestID sets the value of XRequestID.
+func (s *BookHeaders) SetXRequestID(val uuid.UUID) {
+	s.XRequestID = val
+}
+
+// SetResponse sets the value of Response.
+func (s *BookHeaders) SetResponse(val Book) {
+	s.Response = val
 }
 
 // Ref: #/components/schemas/BookInput
@@ -202,29 +228,118 @@ func (s *Deleted) SetStatus(val string) {
 	s.Status = val
 }
 
-// ErrorStatusCode wraps Problem with StatusCode.
-type ErrorStatusCode struct {
+// DeletedHeaders wraps Deleted with response headers.
+type DeletedHeaders struct {
+	XRequestID uuid.UUID
+	Response   Deleted
+}
+
+// GetXRequestID returns the value of XRequestID.
+func (s *DeletedHeaders) GetXRequestID() uuid.UUID {
+	return s.XRequestID
+}
+
+// GetResponse returns the value of Response.
+func (s *DeletedHeaders) GetResponse() Deleted {
+	return s.Response
+}
+
+// SetXRequestID sets the value of XRequestID.
+func (s *DeletedHeaders) SetXRequestID(val uuid.UUID) {
+	s.XRequestID = val
+}
+
+// SetResponse sets the value of Response.
+func (s *DeletedHeaders) SetResponse(val Deleted) {
+	s.Response = val
+}
+
+// ErrorStatusCodeWithHeaders wraps Problem with status code and response headers.
+type ErrorStatusCodeWithHeaders struct {
 	StatusCode int
+	XRequestID uuid.UUID
 	Response   Problem
 }
 
 // GetStatusCode returns the value of StatusCode.
-func (s *ErrorStatusCode) GetStatusCode() int {
+func (s *ErrorStatusCodeWithHeaders) GetStatusCode() int {
 	return s.StatusCode
 }
 
+// GetXRequestID returns the value of XRequestID.
+func (s *ErrorStatusCodeWithHeaders) GetXRequestID() uuid.UUID {
+	return s.XRequestID
+}
+
 // GetResponse returns the value of Response.
-func (s *ErrorStatusCode) GetResponse() Problem {
+func (s *ErrorStatusCodeWithHeaders) GetResponse() Problem {
 	return s.Response
 }
 
 // SetStatusCode sets the value of StatusCode.
-func (s *ErrorStatusCode) SetStatusCode(val int) {
+func (s *ErrorStatusCodeWithHeaders) SetStatusCode(val int) {
 	s.StatusCode = val
 }
 
+// SetXRequestID sets the value of XRequestID.
+func (s *ErrorStatusCodeWithHeaders) SetXRequestID(val uuid.UUID) {
+	s.XRequestID = val
+}
+
 // SetResponse sets the value of Response.
-func (s *ErrorStatusCode) SetResponse(val Problem) {
+func (s *ErrorStatusCodeWithHeaders) SetResponse(val Problem) {
+	s.Response = val
+}
+
+// ListBooksOKHeaders wraps []Book with response headers.
+type ListBooksOKHeaders struct {
+	XRequestID uuid.UUID
+	Response   []Book
+}
+
+// GetXRequestID returns the value of XRequestID.
+func (s *ListBooksOKHeaders) GetXRequestID() uuid.UUID {
+	return s.XRequestID
+}
+
+// GetResponse returns the value of Response.
+func (s *ListBooksOKHeaders) GetResponse() []Book {
+	return s.Response
+}
+
+// SetXRequestID sets the value of XRequestID.
+func (s *ListBooksOKHeaders) SetXRequestID(val uuid.UUID) {
+	s.XRequestID = val
+}
+
+// SetResponse sets the value of Response.
+func (s *ListBooksOKHeaders) SetResponse(val []Book) {
+	s.Response = val
+}
+
+// ListPublishersOKHeaders wraps []Publisher with response headers.
+type ListPublishersOKHeaders struct {
+	XRequestID uuid.UUID
+	Response   []Publisher
+}
+
+// GetXRequestID returns the value of XRequestID.
+func (s *ListPublishersOKHeaders) GetXRequestID() uuid.UUID {
+	return s.XRequestID
+}
+
+// GetResponse returns the value of Response.
+func (s *ListPublishersOKHeaders) GetResponse() []Publisher {
+	return s.Response
+}
+
+// SetXRequestID sets the value of XRequestID.
+func (s *ListPublishersOKHeaders) SetXRequestID(val uuid.UUID) {
+	s.XRequestID = val
+}
+
+// SetResponse sets the value of Response.
+func (s *ListPublishersOKHeaders) SetResponse(val []Publisher) {
 	s.Response = val
 }
 
@@ -491,6 +606,32 @@ func (s *Publisher) SetName(val string) {
 // SetID sets the value of ID.
 func (s *Publisher) SetID(val uuid.UUID) {
 	s.ID = val
+}
+
+// PublisherHeaders wraps Publisher with response headers.
+type PublisherHeaders struct {
+	XRequestID uuid.UUID
+	Response   Publisher
+}
+
+// GetXRequestID returns the value of XRequestID.
+func (s *PublisherHeaders) GetXRequestID() uuid.UUID {
+	return s.XRequestID
+}
+
+// GetResponse returns the value of Response.
+func (s *PublisherHeaders) GetResponse() Publisher {
+	return s.Response
+}
+
+// SetXRequestID sets the value of XRequestID.
+func (s *PublisherHeaders) SetXRequestID(val uuid.UUID) {
+	s.XRequestID = val
+}
+
+// SetResponse sets the value of Response.
+func (s *PublisherHeaders) SetResponse(val Publisher) {
+	s.Response = val
 }
 
 // Ref: #/components/schemas/PublisherInput

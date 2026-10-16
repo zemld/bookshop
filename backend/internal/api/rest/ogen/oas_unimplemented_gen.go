@@ -16,77 +16,77 @@ var _ Handler = UnimplementedHandler{}
 // CreateBook implements createBook operation.
 //
 // POST /books
-func (UnimplementedHandler) CreateBook(ctx context.Context, req *BookInput) (r *Book, _ error) {
+func (UnimplementedHandler) CreateBook(ctx context.Context, req *BookInput) (r *BookHeaders, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // CreatePublisher implements createPublisher operation.
 //
 // POST /publishers
-func (UnimplementedHandler) CreatePublisher(ctx context.Context, req *PublisherInput) (r *Publisher, _ error) {
+func (UnimplementedHandler) CreatePublisher(ctx context.Context, req *PublisherInput) (r *PublisherHeaders, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // DeleteBook implements deleteBook operation.
 //
 // DELETE /books/{id}
-func (UnimplementedHandler) DeleteBook(ctx context.Context, params DeleteBookParams) (r *Deleted, _ error) {
+func (UnimplementedHandler) DeleteBook(ctx context.Context, params DeleteBookParams) (r *DeletedHeaders, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // DeletePublisher implements deletePublisher operation.
 //
 // DELETE /publishers/{id}
-func (UnimplementedHandler) DeletePublisher(ctx context.Context, params DeletePublisherParams) (r *Deleted, _ error) {
+func (UnimplementedHandler) DeletePublisher(ctx context.Context, params DeletePublisherParams) (r *DeletedHeaders, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // GetBook implements getBook operation.
 //
 // GET /books/{id}
-func (UnimplementedHandler) GetBook(ctx context.Context, params GetBookParams) (r *Book, _ error) {
+func (UnimplementedHandler) GetBook(ctx context.Context, params GetBookParams) (r *BookHeaders, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // GetPublisher implements getPublisher operation.
 //
 // GET /publishers/{id}
-func (UnimplementedHandler) GetPublisher(ctx context.Context, params GetPublisherParams) (r *Publisher, _ error) {
+func (UnimplementedHandler) GetPublisher(ctx context.Context, params GetPublisherParams) (r *PublisherHeaders, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // ListBooks implements listBooks operation.
 //
 // GET /books
-func (UnimplementedHandler) ListBooks(ctx context.Context) (r []Book, _ error) {
+func (UnimplementedHandler) ListBooks(ctx context.Context) (r *ListBooksOKHeaders, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // ListPublishers implements listPublishers operation.
 //
 // GET /publishers
-func (UnimplementedHandler) ListPublishers(ctx context.Context) (r []Publisher, _ error) {
+func (UnimplementedHandler) ListPublishers(ctx context.Context) (r *ListPublishersOKHeaders, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // UpdateBook implements updateBook operation.
 //
 // PUT /books/{id}
-func (UnimplementedHandler) UpdateBook(ctx context.Context, req *BookInput, params UpdateBookParams) (r *Book, _ error) {
+func (UnimplementedHandler) UpdateBook(ctx context.Context, req *BookInput, params UpdateBookParams) (r *BookHeaders, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // UpdatePublisher implements updatePublisher operation.
 //
 // PUT /publishers/{id}
-func (UnimplementedHandler) UpdatePublisher(ctx context.Context, req *PublisherInput, params UpdatePublisherParams) (r *Publisher, _ error) {
+func (UnimplementedHandler) UpdatePublisher(ctx context.Context, req *PublisherInput, params UpdatePublisherParams) (r *PublisherHeaders, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// NewError creates *ErrorStatusCode from error returned by handler.
+// NewError creates *ErrorStatusCodeWithHeaders from error returned by handler.
 //
 // Used for common default response.
-func (UnimplementedHandler) NewError(ctx context.Context, err error) (r *ErrorStatusCode) {
-	r = new(ErrorStatusCode)
+func (UnimplementedHandler) NewError(ctx context.Context, err error) (r *ErrorStatusCodeWithHeaders) {
+	r = new(ErrorStatusCodeWithHeaders)
 	return r
 }

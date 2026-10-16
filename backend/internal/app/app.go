@@ -12,6 +12,7 @@ import (
 	"bookshop/backend/internal/api/rest/handler"
 	"bookshop/backend/internal/api/rest/ogen"
 	"bookshop/backend/internal/api/rest/server"
+	"bookshop/backend/internal/config"
 	"bookshop/backend/internal/domain/books"
 	"bookshop/backend/internal/domain/publishers"
 	bookrepository "bookshop/backend/internal/ports/books"
@@ -32,11 +33,16 @@ const (
 func New() *fx.App {
 	return fx.New(
 		fx.StopTimeout(_stopTimeout),
-		fx.WithLogger(func() fxevent.Logger {
-			return &fxevent.SlogLogger{Logger: slog.Default()}
+		fx.WithLogger(func(logger *slog.Logger) fxevent.Logger {
+			return &fxevent.SlogLogger{Logger: logger}
 		}),
 		fx.Provide(
 			provideDatabase,
+			func() (config.Config, error) { return config.Load("config/config.yaml") },
+			func(cfg config.Config) config.ServiceConfig { return cfg.Service },
+			func(cfg config.ServiceConfig) *slog.Logger {
+				return slog.New(slog.NewJSONHandler(os.Stdout, nil)).With("service", cfg.Name)
+			},
 			loadServerConfig,
 			fx.Annotate(func(db *pgxpool.Pool) *bookstore.Store {
 				return &bookstore.Store{DB: db}
@@ -59,13 +65,8 @@ func New() *fx.App {
 	)
 }
 
-func loadServerConfig() server.Config {
-	addr := os.Getenv("API_ADDR")
-	if addr == "" {
-		addr = ":8080"
-	}
-
-	return server.Config{Address: addr}
+func loadServerConfig(cfg config.Config) server.Config {
+	return server.Config{Address: cfg.Server.Address}
 }
 
 func provideDatabase(lifecycle fx.Lifecycle) (*pgxpool.Pool, error) {
