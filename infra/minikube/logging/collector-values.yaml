@@ -1,0 +1,30 @@
+fullnameOverride: victoria-logs-collector
+
+remoteWrite:
+  - url: http://victoria-logs:9428
+    maxDiskUsagePerURL: 513MiB
+
+collector:
+  excludeFilter: 'NOT kubernetes.pod_namespace:=bookshop'
+  msgField:
+    - msg
+    - message
+    - log
+  timeField:
+    - time
+    - ts
+    - timestamp
+
+persistence:
+  volume:
+    hostPath:
+      path: /var/lib/vl-collector
+      type: DirectoryOrCreate
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
