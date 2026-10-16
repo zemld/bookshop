@@ -1,7 +1,10 @@
 package web
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -9,6 +12,7 @@ import (
 	"testing"
 
 	"bookshop/frontend/internal/adapters/httpcore"
+	"bookshop/frontend/internal/requestlog"
 
 	"github.com/stretchr/testify/require"
 )
@@ -117,4 +121,25 @@ func TestRenderUnknownBackendCodeWithoutExposingIt(t *testing.T) {
 			require.Contains(t, res.Body.String(), `value="Издательство"`)
 		})
 	}
+}
+
+func TestLogUnexpectedError(t *testing.T) {
+	var output bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&output, nil))
+	ctx := requestlog.WithDetails(context.Background(), requestlog.Details{ID: testID, Method: "POST", Route: "POST /books"})
+	for _, err := range []error{
+		&httpcore.APIError{StatusCode: 400, Code: "invalid_input"},
+		&httpcore.APIError{StatusCode: 404, Code: "not_found"},
+		&httpcore.APIError{StatusCode: 409, Code: "conflict"},
+	} {
+		logUnexpectedError(ctx, logger, err)
+		require.Empty(t, output.String())
+	}
+	logUnexpectedError(ctx, logger, &httpcore.APIError{StatusCode: 500, Code: "internal_error"})
+	require.Contains(t, output.String(), `"event":"http.request_failed"`)
+	require.Contains(t, output.String(), `"request_id":"`+testID+`"`)
+	require.Contains(t, output.String(), `"route":"POST /books"`)
+	require.Contains(t, output.String(), `"status_code":502`)
+	require.Contains(t, output.String(), `"upstream_status_code":500`)
+	require.Contains(t, output.String(), `"error_code":"internal_error"`)
 }

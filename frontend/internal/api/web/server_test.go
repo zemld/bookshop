@@ -1,14 +1,27 @@
 package web
 
 import (
+	"bytes"
 	"context"
 	"io"
+	"log/slog"
 	"net/http"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 )
+
+func TestHTTPServerLogsListenerFailure(t *testing.T) {
+	var output bytes.Buffer
+	s := NewHTTPServer("127.0.0.1:0", http.NotFoundHandler())
+	s.SetLogger(slog.New(slog.NewJSONHandler(&output, nil)))
+	require.NoError(t, s.Start(context.Background()))
+	require.NoError(t, s.listener.Close())
+	require.Error(t, <-s.done)
+	require.Contains(t, output.String(), `"event":"http.listener_failed"`)
+	require.Contains(t, output.String(), `"address":"127.0.0.1:0"`)
+}
 
 func TestHTTPServerDrain(t *testing.T) {
 	t.Parallel()

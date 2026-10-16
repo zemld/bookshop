@@ -1,8 +1,10 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"testing"
@@ -10,6 +12,42 @@ import (
 
 	"github.com/stretchr/testify/require"
 )
+
+func TestStart(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		run  func(*testing.T)
+	}{
+		{
+			name: "logs unexpected listener failure",
+			run: func(t *testing.T) {
+				var output bytes.Buffer
+
+				s := newServer("127.0.0.1:0", http.NotFoundHandler())
+				s.logger = slog.New(slog.NewJSONHandler(&output, nil))
+				require.NoError(t, s.Start(context.Background()))
+				require.NoError(t, s.listener.Close())
+				require.Error(t, <-s.done)
+				require.Contains(t, output.String(), `"event":"http.listener_failed"`)
+				require.Contains(t, output.String(), `"address":"127.0.0.1:0"`)
+			},
+		},
+		{
+			name: "rejects occupied port",
+			run: func(t *testing.T) {
+				listener, err := net.Listen("tcp", "127.0.0.1:0")
+				require.NoError(t, err)
+
+				defer func() { require.NoError(t, listener.Close()) }()
+
+				s := newServer(listener.Addr().String(), http.NotFoundHandler())
+				require.Error(t, s.Start(context.Background()))
+			},
+		},
+	} {
+		t.Run(tc.name, tc.run)
+	}
+}
 
 func TestStop(t *testing.T) {
 	t.Parallel()
@@ -73,19 +111,4 @@ func TestStop(t *testing.T) {
 			require.Equal(t, "done", string(body))
 		})
 	}
-}
-
-func TestStartRejectsOccupiedPort(t *testing.T) {
-	t.Parallel()
-
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err)
-
-	defer func() { require.NoError(t, listener.Close()) }()
-
-	s := newServer(listener.Addr().String(), http.NotFoundHandler())
-
-	err = s.Start(context.Background())
-
-	require.Error(t, err)
 }

@@ -13,6 +13,7 @@ import (
 	core "bookshop/frontend/internal/adapters/httpcore"
 	publisherhttp "bookshop/frontend/internal/adapters/publishers/http"
 	"bookshop/frontend/internal/api/web"
+	"bookshop/frontend/internal/appconfig"
 	bookports "bookshop/frontend/internal/ports/books"
 	publisherports "bookshop/frontend/internal/ports/publishers"
 	bookservice "bookshop/frontend/internal/services/books"
@@ -27,10 +28,14 @@ const stopTimeout = 12 * time.Second
 func New() *fx.App {
 	return fx.New(
 		fx.StopTimeout(stopTimeout),
-		fx.WithLogger(func() fxevent.Logger {
-			return &fxevent.SlogLogger{Logger: slog.Default()}
+		fx.WithLogger(func(logger *slog.Logger) fxevent.Logger {
+			return &fxevent.SlogLogger{Logger: logger}
 		}),
 		fx.Provide(
+			func() appconfig.ServiceConfig { return appconfig.ServiceConfig{Name: "bookshop-web"} },
+			func(cfg appconfig.ServiceConfig) *slog.Logger {
+				return slog.New(slog.NewJSONHandler(os.Stdout, nil)).With("service", cfg.Name)
+			},
 			func() (*core.Client, error) {
 				endpoint := os.Getenv("API_URL")
 				if endpoint == "" {
@@ -48,19 +53,22 @@ func New() *fx.App {
 			func(p publisherports.Publishers) *publisherservice.Service {
 				return &publisherservice.Service{Publishers: p}
 			},
-			func(b bookports.Books, p publisherports.Publishers, bs *bookservice.Service, ps *publisherservice.Service) web.Server {
+			func(b bookports.Books, p publisherports.Publishers, bs *bookservice.Service, ps *publisherservice.Service, logger *slog.Logger) web.Server {
 				return web.Server{
 					Books: b, DeleteBook: b, Publishers: p, GetPublisher: p, DeletePublisher: p,
 					LoadBookForm: bs, CreateBook: b, UpdateBook: b,
 					CreatePublisher: ps, UpdatePublisher: ps,
+					Logger: logger,
 				}
 			},
-			func(handler web.Server) *web.HTTPServer {
+			func(handler web.Server, logger *slog.Logger) *web.HTTPServer {
 				addr := os.Getenv("WEB_ADDR")
 				if addr == "" {
 					addr = ":8081"
 				}
-				return web.NewHTTPServer(addr, handler.CreateHandler())
+				server := web.NewHTTPServer(addr, handler.CreateHandler())
+				server.SetLogger(logger)
+				return server
 			},
 		),
 		fx.Invoke(func(lc fx.Lifecycle, server *web.HTTPServer, client *core.Client) {

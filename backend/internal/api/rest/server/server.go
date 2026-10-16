@@ -83,6 +83,10 @@ func decodeFieldCode(name string) (ogen.ProblemError, bool) {
 	}
 }
 func New(handler ogen.Handler) http.Handler {
+	return newWithLogger(handler, nil)
+}
+
+func newWithLogger(handler ogen.Handler, logger *slog.Logger) http.Handler {
 	server, err := ogen.NewServer(handler, ogen.WithErrorHandler(func(_ context.Context, w http.ResponseWriter, _ *http.Request, decodeErr error) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusBadRequest)
@@ -94,7 +98,7 @@ func New(handler ogen.Handler) http.Handler {
 		panic(err)
 	}
 
-	return server
+	return logRequests(server, logger)
 }
 
 type Config struct {
@@ -105,10 +109,12 @@ type Server struct {
 	http     *http.Server
 	listener net.Listener
 	done     chan error
+	logger   *slog.Logger
 }
 
-func NewServer(lifecycle fx.Lifecycle, cfg Config, handler ogen.Handler) *Server {
-	s := newServer(cfg.Address, New(handler))
+func NewServer(lifecycle fx.Lifecycle, cfg Config, handler ogen.Handler, logger *slog.Logger) *Server {
+	s := newServer(cfg.Address, newWithLogger(handler, logger))
+	s.logger = logger
 	lifecycle.Append(fx.Hook{OnStart: s.Start, OnStop: s.Stop})
 
 	return s
@@ -130,7 +136,9 @@ func (s *Server) Start(context.Context) error {
 	go func() {
 		err := s.http.Serve(listener)
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("api listener stopped", "error", err)
+			if s.logger != nil {
+				s.logger.Error("api listener failed", "event", "http.listener_failed", "address", s.http.Addr, "error", err)
+			}
 		}
 
 		s.done <- err

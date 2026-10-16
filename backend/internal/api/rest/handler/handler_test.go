@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -12,6 +14,7 @@ import (
 	bookentities "bookshop/backend/internal/domain/books/entities"
 	publisherentities "bookshop/backend/internal/domain/publishers/entities"
 	"bookshop/backend/internal/domain/shared"
+	"bookshop/backend/internal/requestlog"
 	"bookshop/backend/internal/services/books"
 	"bookshop/backend/internal/services/publishers"
 	"bookshop/backend/internal/utils/postgreserrors"
@@ -137,9 +140,24 @@ func TestMapDomainAndDatabaseErrorsToProblem(t *testing.T) {
 		{"internal", errors.New("private database error"), 500, "internal_error"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			response := (Handler{}).NewError(context.Background(), fmt.Errorf("operation: %w", tc.err))
+			var output bytes.Buffer
+
+			logger := slog.New(slog.NewJSONHandler(&output, nil))
+			ctx := requestlog.WithDetails(context.Background(), requestlog.Details{ID: "request", Method: "GET", Route: "/books/{id}"})
+			response := (Handler{Logger: logger}).NewError(ctx, fmt.Errorf("operation: %w", tc.err))
 			require.Equal(t, tc.status, response.StatusCode)
 			require.Equal(t, tc.wireCode, string(response.Response.Error))
+
+			if tc.status != 500 {
+				require.Empty(t, output.String())
+				return
+			}
+
+			require.Contains(t, output.String(), `"event":"http.request_failed"`)
+			require.Contains(t, output.String(), `"request_id":"request"`)
+			require.Contains(t, output.String(), `"route":"/books/{id}"`)
+			require.Contains(t, output.String(), `"status_code":500`)
+			require.Contains(t, output.String(), tc.err.Error())
 		})
 	}
 }
