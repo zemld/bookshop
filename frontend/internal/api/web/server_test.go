@@ -1,8 +1,11 @@
 package web
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"testing"
 	"time"
@@ -56,4 +59,20 @@ func TestHTTPServerDrainTimeout(t *testing.T) {
 	defer cancel()
 	require.ErrorIs(t, s.Stop(ctx), context.DeadlineExceeded)
 	close(release)
+}
+
+func TestLogUnexpectedListenerStop(t *testing.T) {
+	var output bytes.Buffer
+	original := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&output, nil)))
+	t.Cleanup(func() { slog.SetDefault(original) })
+	s := NewHTTPServer("127.0.0.1:0", http.NotFoundHandler())
+	require.NoError(t, s.Start(context.Background()))
+	require.NoError(t, s.listener.Close())
+	require.Error(t, <-s.done)
+	var record map[string]any
+	require.NoError(t, json.Unmarshal(output.Bytes(), &record))
+	require.Equal(t, "http.listener_failed", record["event"])
+	require.Equal(t, s.server.Addr, record["address"])
+	require.Equal(t, "ERROR", record["level"])
 }

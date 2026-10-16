@@ -7,6 +7,7 @@ import (
 	"bookshop/frontend/internal/domain/publishers"
 	bookports "bookshop/frontend/internal/ports/books"
 	publisherports "bookshop/frontend/internal/ports/publishers"
+	"bookshop/frontend/internal/requestlog"
 )
 
 type Server struct {
@@ -30,5 +31,8 @@ func (s Server) CreateHandler() http.Handler {
 	})
 	s.registerPublisherRoutes(m)
 	s.registerBookRoutes(m)
-	return m
+	return requestlog.Wrap(m, func(r *http.Request) string {
+		_, pattern := m.Handler(r)
+		return pattern
+	})
 }

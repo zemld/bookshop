@@ -1,8 +1,11 @@
 package server
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"testing"
@@ -88,4 +91,24 @@ func TestStartRejectsOccupiedPort(t *testing.T) {
 	err = s.Start(context.Background())
 
 	require.Error(t, err)
+}
+
+func TestLogUnexpectedListenerStop(t *testing.T) {
+	var output bytes.Buffer
+
+	original := slog.Default()
+
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&output, nil)))
+	t.Cleanup(func() { slog.SetDefault(original) })
+
+	s := newServer("127.0.0.1:0", http.NotFoundHandler())
+	require.NoError(t, s.Start(context.Background()))
+	require.NoError(t, s.listener.Close())
+	require.Error(t, <-s.done)
+
+	var record map[string]any
+	require.NoError(t, json.Unmarshal(output.Bytes(), &record))
+	require.Equal(t, "http.listener_failed", record["event"])
+	require.Equal(t, s.http.Addr, record["address"])
+	require.Equal(t, "ERROR", record["level"])
 }

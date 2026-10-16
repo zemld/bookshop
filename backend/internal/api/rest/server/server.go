@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"bookshop/backend/internal/api/rest/ogen"
+	"bookshop/backend/internal/requestlog"
 
 	"github.com/ogen-go/ogen/ogenerrors"
 	"github.com/ogen-go/ogen/validate"
@@ -94,7 +95,14 @@ func New(handler ogen.Handler) http.Handler {
 		panic(err)
 	}
 
-	return server
+	return requestlog.Wrap(server, func(r *http.Request) string {
+		route, ok := server.FindPath(r.Method, r.URL)
+		if !ok {
+			return ""
+		}
+
+		return route.PathPattern()
+	})
 }
 
 type Config struct {
@@ -130,7 +138,7 @@ func (s *Server) Start(context.Context) error {
 	go func() {
 		err := s.http.Serve(listener)
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("api listener stopped", "error", err)
+			slog.Error("api listener stopped", "event", "http.listener_failed", "address", s.http.Addr, "error", err)
 		}
 
 		s.done <- err
