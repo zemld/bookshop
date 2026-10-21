@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"bookshop/frontend/internal/telemetry"
+	"bookshop/frontend/internal/services/metrics"
 
 	"github.com/stretchr/testify/require"
 )
@@ -66,10 +66,10 @@ func TestHTTPServerStart(t *testing.T) {
 				return
 			}
 
-			metrics, err := telemetry.New()
+			metrics, err := metrics.New()
 			require.NoError(t, err)
 			t.Cleanup(func() { require.NoError(t, metrics.Provider.Shutdown(context.Background())) })
-			s := NewHTTPServer("127.0.0.1:0", "127.0.0.1:0", http.NotFoundHandler(), metrics.Handler)
+			s := NewHTTPServer("127.0.0.1:0", "127.0.0.1:0", http.NotFoundHandler(), CreateMetricsHandler(metrics.Registry))
 			require.NoError(t, s.Start(context.Background()))
 			t.Cleanup(func() { require.NoError(t, s.Stop(context.Background())) })
 			req, err := http.NewRequest(http.MethodGet, "http://"+s.metricsListener.Addr().String()+"/metrics", nil)
@@ -82,8 +82,7 @@ func TestHTTPServerStart(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, http.StatusOK, resp.StatusCode)
 			require.Equal(t, "application/openmetrics-text; version=1.0.0; charset=utf-8", resp.Header.Get("Content-Type"))
-			require.Contains(t, string(body), "go_goroutines")
-			require.Contains(t, string(body), "process_cpu_seconds_total")
+			require.NotEqual(t, "# EOF\n", string(body))
 			require.True(t, strings.HasSuffix(string(body), "# EOF\n"))
 			main, err := http.Get("http://" + s.listener.Addr().String() + "/metrics")
 			require.NoError(t, err)

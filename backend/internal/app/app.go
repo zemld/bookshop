@@ -18,8 +18,8 @@ import (
 	bookrepository "bookshop/backend/internal/ports/books"
 	publisherrepository "bookshop/backend/internal/ports/publishers"
 	bookservice "bookshop/backend/internal/services/books"
+	"bookshop/backend/internal/services/metrics"
 	publisherservice "bookshop/backend/internal/services/publishers"
-	"bookshop/backend/internal/telemetry"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/fx"
@@ -67,15 +67,15 @@ func New() *fx.App {
 	)
 }
 
-func provideMetrics(lifecycle fx.Lifecycle) (*telemetry.Metrics, error) {
-	metrics, err := telemetry.New()
+func provideMetrics(lifecycle fx.Lifecycle) (*metrics.Service, error) {
+	service, err := metrics.New()
 	if err != nil {
 		return nil, fmt.Errorf("initialize metrics: %w", err)
 	}
 
-	lifecycle.Append(fx.Hook{OnStop: metrics.Provider.Shutdown})
+	lifecycle.Append(fx.Hook{OnStop: service.Provider.Shutdown})
 
-	return metrics, nil
+	return service, nil
 }
 
 func loadServerConfig(cfg config.Config) server.Config {

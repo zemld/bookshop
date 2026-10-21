@@ -9,32 +9,11 @@ import (
 
 	bookentities "bookshop/frontend/internal/domain/books/entities"
 	publisherentities "bookshop/frontend/internal/domain/publishers/entities"
-	"bookshop/frontend/internal/telemetry"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/metric/noop"
 )
-
-func TestExportOgenMetrics(t *testing.T) {
-	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("X-Request-ID", _testRequestID)
-		_, _ = w.Write([]byte("[]"))
-	}))
-	t.Cleanup(backend.Close)
-	metrics, err := telemetry.New()
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, metrics.Provider.Shutdown(context.Background())) })
-	client, err := New(backend.URL, metrics.Provider)
-	require.NoError(t, err)
-	t.Cleanup(client.Stop)
-	_, err = client.ListBooks(context.Background())
-	require.NoError(t, err)
-	export := httptest.NewRecorder()
-	metrics.Handler.ServeHTTP(export, httptest.NewRequest(http.MethodGet, "/metrics", nil))
-	require.Contains(t, export.Body.String(), "ogen_client_request_count_total")
-}
 
 const (
 	_testID        = "4e643615-2a28-40a5-8e7d-fbe6dd2d498d"

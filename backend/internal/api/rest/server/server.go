@@ -14,7 +14,7 @@ import (
 
 	"bookshop/backend/internal/api/middleware"
 	"bookshop/backend/internal/api/rest/ogen"
-	"bookshop/backend/internal/telemetry"
+	"bookshop/backend/internal/services/metrics"
 
 	"github.com/ogen-go/ogen/ogenerrors"
 	"github.com/ogen-go/ogen/validate"
@@ -135,8 +135,8 @@ type Server struct {
 	logger          *slog.Logger
 }
 
-func NewServer(lifecycle fx.Lifecycle, cfg Config, handler ogen.Handler, logger *slog.Logger, metrics *telemetry.Metrics) *Server {
-	s := newServer(cfg.Address, cfg.MetricsAddress, New(handler, logger, metrics.Provider), metrics.Handler)
+func NewServer(lifecycle fx.Lifecycle, cfg Config, handler ogen.Handler, logger *slog.Logger, metrics *metrics.Service) *Server {
+	s := newServer(cfg.Address, cfg.MetricsAddress, New(handler, logger, metrics.Provider), createMetricsHandler(metrics.Registry))
 	s.logger = logger
 	lifecycle.Append(fx.Hook{OnStart: s.Start, OnStop: s.Stop})
 
