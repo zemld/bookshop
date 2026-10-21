@@ -19,6 +19,7 @@ import (
 	publisherrepository "bookshop/backend/internal/ports/publishers"
 	bookservice "bookshop/backend/internal/services/books"
 	publisherservice "bookshop/backend/internal/services/publishers"
+	"bookshop/backend/internal/telemetry"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/fx"
@@ -38,6 +39,7 @@ func New() *fx.App {
 		}),
 		fx.Provide(
 			provideDatabase,
+			provideMetrics,
 			func() (config.Config, error) { return config.Load("config/config.yaml") },
 			func(cfg config.Config) config.ServiceConfig { return cfg.Service },
 			func(cfg config.ServiceConfig) *slog.Logger {
@@ -63,6 +65,17 @@ func New() *fx.App {
 		),
 		fx.Invoke(func(*server.Server) {}),
 	)
+}
+
+func provideMetrics(lifecycle fx.Lifecycle) (*telemetry.Metrics, error) {
+	metrics, err := telemetry.New()
+	if err != nil {
+		return nil, fmt.Errorf("initialize metrics: %w", err)
+	}
+
+	lifecycle.Append(fx.Hook{OnStop: metrics.Provider.Shutdown})
+
+	return metrics, nil
 }
 
 func loadServerConfig(cfg config.Config) server.Config {

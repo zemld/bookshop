@@ -5,8 +5,11 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
+
+	"bookshop/backend/internal/telemetry"
 
 	"github.com/stretchr/testify/require"
 )
@@ -34,7 +37,7 @@ func TestStart(t *testing.T) {
 
 				defer func() { require.NoError(t, occupied.Close()) }()
 
-				s := newServer(firstAddress, occupied.Addr().String(), http.NotFoundHandler())
+				s := newServer(firstAddress, occupied.Addr().String(), http.NotFoundHandler(), http.NotFoundHandler())
 				require.ErrorContains(t, s.Start(context.Background()), "listen for metrics")
 
 				rebound, err := net.Listen("tcp", firstAddress)
@@ -44,7 +47,11 @@ func TestStart(t *testing.T) {
 				return
 			}
 
-			s := newServer("127.0.0.1:0", "127.0.0.1:0", http.NotFoundHandler())
+			metrics, err := telemetry.New()
+			require.NoError(t, err)
+			t.Cleanup(func() { require.NoError(t, metrics.Provider.Shutdown(context.Background())) })
+
+			s := newServer("127.0.0.1:0", "127.0.0.1:0", http.NotFoundHandler(), metrics.Handler)
 			require.NoError(t, s.Start(context.Background()))
 			t.Cleanup(func() { require.NoError(t, s.Stop(context.Background())) })
 
@@ -60,7 +67,9 @@ func TestStart(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, http.StatusOK, resp.StatusCode)
 			require.Equal(t, "application/openmetrics-text; version=1.0.0; charset=utf-8", resp.Header.Get("Content-Type"))
-			require.Equal(t, "# EOF\n", string(body))
+			require.Contains(t, string(body), "go_goroutines")
+			require.Contains(t, string(body), "process_cpu_seconds_total")
+			require.True(t, strings.HasSuffix(string(body), "# EOF\n"))
 
 			main, err := http.Get("http://" + s.listener.Addr().String() + "/metrics")
 			require.NoError(t, err)
@@ -78,7 +87,7 @@ func TestStop(t *testing.T) {
 		run  func(*testing.T)
 	}{
 		{name: "closes both listeners", run: func(t *testing.T) {
-			s := newServer("127.0.0.1:0", "127.0.0.1:0", http.NotFoundHandler())
+			s := newServer("127.0.0.1:0", "127.0.0.1:0", http.NotFoundHandler(), http.NotFoundHandler())
 			require.NoError(t, s.Start(context.Background()))
 			metricsAddress := s.metricsListener.Addr().String()
 			mainAddress := s.listener.Addr().String()
@@ -99,7 +108,7 @@ func TestStop(t *testing.T) {
 				<-release
 
 				_, _ = w.Write([]byte("drained"))
-			}))
+			}), http.NotFoundHandler())
 			metricsEntered := make(chan struct{})
 			metricsHandler := s.metrics.Handler
 			s.metrics.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

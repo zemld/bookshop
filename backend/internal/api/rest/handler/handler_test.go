@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -14,14 +15,31 @@ import (
 	"bookshop/backend/internal/domain/shared"
 	"bookshop/backend/internal/services/books"
 	"bookshop/backend/internal/services/publishers"
+	"bookshop/backend/internal/telemetry"
 	"bookshop/backend/internal/utils/postgreserrors"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/metric/noop"
 )
 
+func TestExportOgenMetrics(t *testing.T) {
+	metrics, err := telemetry.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, metrics.Provider.Shutdown(context.Background())) })
+
+	api := server.New(Handler{}, nil, metrics.Provider)
+	response := httptest.NewRecorder()
+	api.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/books/no-uuid", nil))
+	require.Equal(t, http.StatusBadRequest, response.Code)
+
+	export := httptest.NewRecorder()
+	metrics.Handler.ServeHTTP(export, httptest.NewRequest(http.MethodGet, "/metrics", nil))
+	require.Contains(t, export.Body.String(), "ogen_server_request_count_total")
+}
+
 func TestRejectInvalidRequest(t *testing.T) {
-	api := server.New(Handler{Books: books.Service{}, Publishers: publishers.Service{}}, nil)
+	api := server.New(Handler{Books: books.Service{}, Publishers: publishers.Service{}}, nil, noop.NewMeterProvider())
 
 	for _, tc := range []struct {
 		name, method, path, body, contentType, want string
@@ -50,7 +68,7 @@ func TestRejectInvalidRequest(t *testing.T) {
 }
 
 func TestValidationResponseForCreateAndUpdate(t *testing.T) {
-	api := server.New(Handler{Books: books.Service{}}, nil)
+	api := server.New(Handler{Books: books.Service{}}, nil, noop.NewMeterProvider())
 
 	for _, path := range []struct{ method, path string }{
 		{"POST", "/books"}, {"PUT", "/books/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"},
@@ -73,7 +91,7 @@ func TestValidationResponseForCreateAndUpdate(t *testing.T) {
 }
 
 func TestDecodeFieldErrors(t *testing.T) {
-	api := server.New(Handler{}, nil)
+	api := server.New(Handler{}, nil, noop.NewMeterProvider())
 
 	for _, tc := range []struct{ body, want string }{
 		{`{"author":"A","name":"B"}`, "invalid_year"},
@@ -96,7 +114,7 @@ func TestDecodeFieldErrors(t *testing.T) {
 }
 
 func TestPublisherValidationResponseForCreateAndUpdate(t *testing.T) {
-	api := server.New(Handler{Publishers: publishers.Service{}}, nil)
+	api := server.New(Handler{Publishers: publishers.Service{}}, nil, noop.NewMeterProvider())
 
 	for _, tc := range []struct{ method, path string }{
 		{"POST", "/publishers"},

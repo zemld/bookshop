@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/metric/noop"
 )
 
 func TestPublisherOperations(t *testing.T) {
@@ -44,7 +45,7 @@ func TestPublisherOperations(t *testing.T) {
 				_, _ = w.Write([]byte(`{"id":"` + id.String() + `","name":"Имя"}`))
 			}))
 			defer api.Close()
-			c, err := apiClient.New(api.URL)
+			c, err := apiClient.New(api.URL, noop.NewMeterProvider())
 			require.NoError(t, err)
 			defer c.Stop()
 			s := Service{Publishers: c}

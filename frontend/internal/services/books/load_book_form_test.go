@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/metric/noop"
 )
 
 func TestLoadBookForm(t *testing.T) {
@@ -47,7 +48,7 @@ func TestLoadBookForm(t *testing.T) {
 				}
 			}))
 			defer api.Close()
-			c, err := apiClient.New(api.URL)
+			c, err := apiClient.New(api.URL, noop.NewMeterProvider())
 			require.NoError(t, err)
 			defer c.Stop()
 			s := Service{Books: c, Publishers: c}

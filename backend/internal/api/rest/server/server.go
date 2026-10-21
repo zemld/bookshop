@@ -14,9 +14,11 @@ import (
 
 	"bookshop/backend/internal/api/middleware"
 	"bookshop/backend/internal/api/rest/ogen"
+	"bookshop/backend/internal/telemetry"
 
 	"github.com/ogen-go/ogen/ogenerrors"
 	"github.com/ogen-go/ogen/validate"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/fx"
 )
 
@@ -83,13 +85,13 @@ func decodeFieldCode(name string) (ogen.ProblemError, bool) {
 		return "", false
 	}
 }
-func New(handler ogen.Handler, logger *slog.Logger) http.Handler {
+func New(handler ogen.Handler, logger *slog.Logger, provider metric.MeterProvider) http.Handler {
 	var (
 		server *ogen.Server
 		err    error
 	)
 
-	server, err = ogen.NewServer(handler, ogen.WithMiddleware(middleware.NewRequestLoggingMiddleware(&server, handler, logger)), ogen.WithErrorHandler(func(_ context.Context, w http.ResponseWriter, r *http.Request, decodeErr error) {
+	server, err = ogen.NewServer(handler, ogen.WithMeterProvider(provider), ogen.WithMiddleware(middleware.NewRequestLoggingMiddleware(&server, handler, logger)), ogen.WithErrorHandler(func(_ context.Context, w http.ResponseWriter, r *http.Request, decodeErr error) {
 		w.Header().Set(middleware.RequestIDHeader, middleware.GetRequestID(r.Header).String())
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusBadRequest)
@@ -133,20 +135,17 @@ type Server struct {
 	logger          *slog.Logger
 }
 
-func NewServer(lifecycle fx.Lifecycle, cfg Config, handler ogen.Handler, logger *slog.Logger) *Server {
-	s := newServer(cfg.Address, cfg.MetricsAddress, New(handler, logger))
+func NewServer(lifecycle fx.Lifecycle, cfg Config, handler ogen.Handler, logger *slog.Logger, metrics *telemetry.Metrics) *Server {
+	s := newServer(cfg.Address, cfg.MetricsAddress, New(handler, logger, metrics.Provider), metrics.Handler)
 	s.logger = logger
 	lifecycle.Append(fx.Hook{OnStart: s.Start, OnStop: s.Stop})
 
 	return s
 }
 
-func newServer(addr, metricsAddr string, handler http.Handler) *Server {
+func newServer(addr, metricsAddr string, handler, metricsHandler http.Handler) *Server {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /metrics", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/openmetrics-text; version=1.0.0; charset=utf-8")
-		_, _ = w.Write([]byte("# EOF\n"))
-	})
+	mux.Handle("GET /metrics", metricsHandler)
 
 	return &Server{http: &http.Server{Addr: addr, Handler: handler}, metrics: &http.Server{Addr: metricsAddr, Handler: mux}}
 }
