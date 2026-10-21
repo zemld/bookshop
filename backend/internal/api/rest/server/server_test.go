@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"bookshop/backend/internal/api/rest/handler"
 	"bookshop/backend/internal/services/metrics"
 
 	"github.com/stretchr/testify/require"
@@ -51,7 +52,7 @@ func TestStart(t *testing.T) {
 			require.NoError(t, err)
 			t.Cleanup(func() { require.NoError(t, metrics.Provider.Shutdown(context.Background())) })
 
-			s := newServer("127.0.0.1:0", "127.0.0.1:0", http.NotFoundHandler(), createMetricsHandler(metrics.Registry))
+			s := newServer("127.0.0.1:0", "127.0.0.1:0", http.NotFoundHandler(), handler.CreateMetricsHandler(metrics.Registry))
 			require.NoError(t, s.Start(context.Background()))
 			t.Cleanup(func() { require.NoError(t, s.Stop(context.Background())) })
 

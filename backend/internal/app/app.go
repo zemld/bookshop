@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 	publisherservice "bookshop/backend/internal/services/publishers"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 )
@@ -61,6 +63,8 @@ func New() *fx.App {
 			fx.Annotate(func(books books.Books, publishers publishers.Publishers) handler.Handler {
 				return handler.Handler{Books: books, Publishers: publishers}
 			}, fx.As(new(ogen.Handler))),
+			func(service *metrics.Service) metric.MeterProvider { return service.Provider },
+			func(service *metrics.Service) http.Handler { return handler.CreateMetricsHandler(service.Registry) },
 			server.NewServer,
 		),
 		fx.Invoke(func(*server.Server) {}),
