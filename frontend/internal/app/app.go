@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"bookshop/frontend/internal/adapters/api"
+	"bookshop/frontend/internal/api/metrics"
 	"bookshop/frontend/internal/api/web"
 	"bookshop/frontend/internal/config"
 	bookports "bookshop/frontend/internal/ports/books"
@@ -16,6 +17,7 @@ import (
 	bookservice "bookshop/frontend/internal/services/books"
 	publisherservice "bookshop/frontend/internal/services/publishers"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 )
@@ -29,6 +31,7 @@ func New() *fx.App {
 			return &fxevent.SlogLogger{Logger: logger}
 		}),
 		fx.Provide(
+			prometheus.NewRegistry,
 			func() (config.Config, error) { return config.Load("config/config.yaml") },
 			func(cfg config.Config) config.ServiceConfig { return cfg.Service },
 			func(cfg config.ServiceConfig) *slog.Logger {
@@ -58,10 +61,14 @@ func New() *fx.App {
 				server.SetLogger(logger)
 				return server
 			},
+			func(cfg config.Config, registry *prometheus.Registry) *metrics.Server {
+				return metrics.NewServer(cfg.Metrics.Address, registry)
+			},
 		),
-		fx.Invoke(func(lc fx.Lifecycle, server *web.HTTPServer, client *api.Client) {
+		fx.Invoke(func(lc fx.Lifecycle, server *web.HTTPServer, metricsServer *metrics.Server, client *api.Client) {
 			lc.Append(fx.Hook{OnStop: func(context.Context) error { client.Stop(); return nil }})
 			lc.Append(fx.Hook{OnStart: server.Start, OnStop: server.Stop})
+			lc.Append(fx.Hook{OnStart: metricsServer.Start, OnStop: metricsServer.Stop})
 		}),
 	)
 }

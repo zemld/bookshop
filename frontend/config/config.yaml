@@ -2,5 +2,7 @@ service:
   name: bookshop-web
 server:
   address: ":8081"
+metrics:
+  address: "127.0.0.1:9091"
 api:
   url: ""

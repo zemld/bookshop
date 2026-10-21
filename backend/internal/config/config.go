@@ -19,6 +19,9 @@ type Config struct {
 	Server  struct {
 		Address string `koanf:"address"`
 	} `koanf:"server"`
+	Metrics struct {
+		Address string `koanf:"address"`
+	} `koanf:"metrics"`
 }
 
 func Load(path string) (Config, error) {
@@ -33,13 +36,19 @@ func Load(path string) (Config, error) {
 		}
 	}
 
+	if value := os.Getenv("METRICS_ADDR"); value != "" {
+		if err := k.Set("metrics.address", value); err != nil {
+			return Config{}, fmt.Errorf("override METRICS_ADDR: %w", err)
+		}
+	}
+
 	var cfg Config
 	if err := k.Unmarshal("", &cfg); err != nil {
 		return Config{}, fmt.Errorf("decode backend configuration: %w", err)
 	}
 
-	if cfg.Service.Name == "" || cfg.Server.Address == "" {
-		return Config{}, errors.New("backend service.name and server.address are required")
+	if cfg.Service.Name == "" || cfg.Server.Address == "" || cfg.Metrics.Address == "" {
+		return Config{}, errors.New("backend service.name, server.address and metrics.address are required")
 	}
 
 	return cfg, nil
