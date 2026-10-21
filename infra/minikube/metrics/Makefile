@@ -8,13 +8,13 @@ install:
 	helm upgrade --install vmsingle vm/victoria-metrics-single \
 		--version $(VICTORIAMETRICS_CHART_VERSION) \
 		--kube-context minikube --namespace default \
-		--values guide-vmsingle-values.yaml --wait --timeout 5m
+		--values victoriametrics-values.yaml --wait --timeout 5m
 
 render:
 	helm template vmsingle victoria-metrics-single \
 		--repo https://victoriametrics.github.io/helm-charts/ \
 		--version $(VICTORIAMETRICS_CHART_VERSION) \
-		--namespace default --values guide-vmsingle-values.yaml
+		--namespace default --values victoriametrics-values.yaml
 
 open-ui:
 	kubectl --context=minikube --namespace default \
