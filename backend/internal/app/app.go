@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"time"
 
@@ -18,9 +19,11 @@ import (
 	bookrepository "bookshop/backend/internal/ports/books"
 	publisherrepository "bookshop/backend/internal/ports/publishers"
 	bookservice "bookshop/backend/internal/services/books"
+	"bookshop/backend/internal/services/metrics"
 	publisherservice "bookshop/backend/internal/services/publishers"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 )
@@ -38,6 +41,7 @@ func New() *fx.App {
 		}),
 		fx.Provide(
 			provideDatabase,
+			provideMetrics,
 			func() (config.Config, error) { return config.Load("config/config.yaml") },
 			func(cfg config.Config) config.ServiceConfig { return cfg.Service },
 			func(cfg config.ServiceConfig) *slog.Logger {
@@ -59,10 +63,23 @@ func New() *fx.App {
 			fx.Annotate(func(books books.Books, publishers publishers.Publishers) handler.Handler {
 				return handler.Handler{Books: books, Publishers: publishers}
 			}, fx.As(new(ogen.Handler))),
+			func(service *metrics.Service) metric.MeterProvider { return service.Provider },
+			func(service *metrics.Service) http.Handler { return handler.NewMetricsHandler(service.Registry) },
 			server.NewServer,
 		),
 		fx.Invoke(func(*server.Server) {}),
 	)
+}
+
+func provideMetrics(lifecycle fx.Lifecycle) (*metrics.Service, error) {
+	service, err := metrics.New()
+	if err != nil {
+		return nil, fmt.Errorf("initialize metrics: %w", err)
+	}
+
+	lifecycle.Append(fx.Hook{OnStop: service.Provider.Shutdown})
+
+	return service, nil
 }
 
 func loadServerConfig(cfg config.Config) server.Config {

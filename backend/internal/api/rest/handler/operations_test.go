@@ -19,6 +19,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/metric/noop"
 )
 
 func TestOperationsHTTP(t *testing.T) {
@@ -177,7 +178,7 @@ func TestOperationsHTTP(t *testing.T) {
 			tt.setup(books, publishers)
 			api := server.New(Handler{
 				Books: bookservice.Service{Repository: books}, Publishers: publisherservice.Service{Repository: publishers},
-			}, nil)
+			}, nil, noop.NewMeterProvider())
 
 			req := httptest.NewRequest(tt.method, tt.path, strings.NewReader(tt.body))
 			req.Header.Set("X-Request-ID", "31079ea7-48a9-46ee-af99-15e6f8020c38")

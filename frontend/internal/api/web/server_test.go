@@ -7,8 +7,11 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
+
+	"bookshop/frontend/internal/services/metrics"
 
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +24,7 @@ func TestHTTPServerLogsListenerFailure(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var output bytes.Buffer
-			s := NewHTTPServer(tc.address, "127.0.0.1:0", http.NotFoundHandler())
+			s := NewHTTPServer(tc.address, "127.0.0.1:0", http.NotFoundHandler(), http.NotFoundHandler())
 			s.SetLogger(slog.New(slog.NewJSONHandler(&output, nil)))
 			require.NoError(t, s.Start(context.Background()))
 			t.Cleanup(func() {
@@ -55,7 +58,7 @@ func TestHTTPServerStart(t *testing.T) {
 				occupied, err := net.Listen("tcp", "127.0.0.1:0")
 				require.NoError(t, err)
 				defer func() { require.NoError(t, occupied.Close()) }()
-				s := NewHTTPServer(firstAddress, occupied.Addr().String(), http.NotFoundHandler())
+				s := NewHTTPServer(firstAddress, occupied.Addr().String(), http.NotFoundHandler(), http.NotFoundHandler())
 				require.ErrorContains(t, s.Start(context.Background()), "listen for metrics")
 				rebound, err := net.Listen("tcp", firstAddress)
 				require.NoError(t, err)
@@ -63,7 +66,10 @@ func TestHTTPServerStart(t *testing.T) {
 				return
 			}
 
-			s := NewHTTPServer("127.0.0.1:0", "127.0.0.1:0", http.NotFoundHandler())
+			metrics, err := metrics.New()
+			require.NoError(t, err)
+			t.Cleanup(func() { require.NoError(t, metrics.Provider.Shutdown(context.Background())) })
+			s := NewHTTPServer("127.0.0.1:0", "127.0.0.1:0", http.NotFoundHandler(), NewMetricsHandler(metrics.Registry))
 			require.NoError(t, s.Start(context.Background()))
 			t.Cleanup(func() { require.NoError(t, s.Stop(context.Background())) })
 			req, err := http.NewRequest(http.MethodGet, "http://"+s.metricsListener.Addr().String()+"/metrics", nil)
@@ -76,7 +82,8 @@ func TestHTTPServerStart(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, http.StatusOK, resp.StatusCode)
 			require.Equal(t, "application/openmetrics-text; version=1.0.0; charset=utf-8", resp.Header.Get("Content-Type"))
-			require.Equal(t, "# EOF\n", string(body))
+			require.NotEqual(t, "# EOF\n", string(body))
+			require.True(t, strings.HasSuffix(string(body), "# EOF\n"))
 			main, err := http.Get("http://" + s.listener.Addr().String() + "/metrics")
 			require.NoError(t, err)
 			defer func() { require.NoError(t, main.Body.Close()) }()
@@ -98,7 +105,7 @@ func TestHTTPServerStop(t *testing.T) {
 				close(entered)
 				<-release
 				_, _ = w.Write([]byte("done"))
-			}))
+			}), http.NotFoundHandler())
 			require.NoError(t, s.Start(context.Background()))
 			resp, err := http.Get("http://" + s.listener.Addr().String())
 			require.NoError(t, err)
@@ -123,7 +130,7 @@ func TestHTTPServerStop(t *testing.T) {
 				w.(http.Flusher).Flush()
 				close(entered)
 				<-release
-			}))
+			}), http.NotFoundHandler())
 			require.NoError(t, s.Start(context.Background()))
 			resp, err := http.Get("http://" + s.listener.Addr().String())
 			require.NoError(t, err)
@@ -135,7 +142,7 @@ func TestHTTPServerStop(t *testing.T) {
 			close(release)
 		}},
 		{name: "closes both listeners", run: func(t *testing.T) {
-			s := NewHTTPServer("127.0.0.1:0", "127.0.0.1:0", http.NotFoundHandler())
+			s := NewHTTPServer("127.0.0.1:0", "127.0.0.1:0", http.NotFoundHandler(), http.NotFoundHandler())
 			require.NoError(t, s.Start(context.Background()))
 			addresses := []string{s.listener.Addr().String(), s.metricsListener.Addr().String()}
 			require.NoError(t, s.Stop(context.Background()))
@@ -153,7 +160,7 @@ func TestHTTPServerStop(t *testing.T) {
 				close(mainEntered)
 				<-release
 				_, _ = w.Write([]byte("drained"))
-			}))
+			}), http.NotFoundHandler())
 			metricsEntered := make(chan struct{})
 			metricsHandler := s.metrics.Handler
 			s.metrics.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

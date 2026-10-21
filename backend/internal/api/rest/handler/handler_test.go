@@ -18,10 +18,11 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/metric/noop"
 )
 
 func TestRejectInvalidRequest(t *testing.T) {
-	api := server.New(Handler{Books: books.Service{}, Publishers: publishers.Service{}}, nil)
+	api := server.New(Handler{Books: books.Service{}, Publishers: publishers.Service{}}, nil, noop.NewMeterProvider())
 
 	for _, tc := range []struct {
 		name, method, path, body, contentType, want string
@@ -50,7 +51,7 @@ func TestRejectInvalidRequest(t *testing.T) {
 }
 
 func TestValidationResponseForCreateAndUpdate(t *testing.T) {
-	api := server.New(Handler{Books: books.Service{}}, nil)
+	api := server.New(Handler{Books: books.Service{}}, nil, noop.NewMeterProvider())
 
 	for _, path := range []struct{ method, path string }{
 		{"POST", "/books"}, {"PUT", "/books/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"},
@@ -73,7 +74,7 @@ func TestValidationResponseForCreateAndUpdate(t *testing.T) {
 }
 
 func TestDecodeFieldErrors(t *testing.T) {
-	api := server.New(Handler{}, nil)
+	api := server.New(Handler{}, nil, noop.NewMeterProvider())
 
 	for _, tc := range []struct{ body, want string }{
 		{`{"author":"A","name":"B"}`, "invalid_year"},
@@ -96,7 +97,7 @@ func TestDecodeFieldErrors(t *testing.T) {
 }
 
 func TestPublisherValidationResponseForCreateAndUpdate(t *testing.T) {
-	api := server.New(Handler{Publishers: publishers.Service{}}, nil)
+	api := server.New(Handler{Publishers: publishers.Service{}}, nil, noop.NewMeterProvider())
 
 	for _, tc := range []struct{ method, path string }{
 		{"POST", "/publishers"},

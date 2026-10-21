@@ -12,6 +12,7 @@ import (
 	"bookshop/frontend/internal/domain/books/entities"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/metric/noop"
 )
 
 func TestRenderBookFormError(t *testing.T) {
@@ -30,7 +31,7 @@ func TestRenderBookFormError(t *testing.T) {
 			defer api.Close()
 			var output bytes.Buffer
 			logger := slog.New(slog.NewJSONHandler(&output, nil))
-			client, err := apiClient.New(api.URL)
+			client, err := apiClient.New(api.URL, noop.NewMeterProvider())
 			require.NoError(t, err)
 			defer client.Stop()
 			s := Server{Publishers: client, Logger: logger}

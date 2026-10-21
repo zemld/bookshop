@@ -19,12 +19,9 @@ type HTTPServer struct {
 	logger          *slog.Logger
 }
 
-func NewHTTPServer(addr, metricsAddr string, handler http.Handler) *HTTPServer {
+func NewHTTPServer(addr, metricsAddr string, handler, metricsHandler http.Handler) *HTTPServer {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /metrics", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/openmetrics-text; version=1.0.0; charset=utf-8")
-		_, _ = w.Write([]byte("# EOF\n"))
-	})
+	mux.Handle("GET /metrics", metricsHandler)
 	return &HTTPServer{server: &http.Server{Addr: addr, Handler: handler}, metrics: &http.Server{Addr: metricsAddr, Handler: mux}}
 }
 

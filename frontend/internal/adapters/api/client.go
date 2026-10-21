@@ -14,6 +14,7 @@ import (
 	publisherports "bookshop/frontend/internal/ports/publishers"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/metric"
 )
 
 type Client struct {
@@ -35,12 +36,12 @@ var (
 	_ publisherports.Publishers = (*Client)(nil)
 )
 
-func New(endpoint string) (*Client, error) {
+func New(endpoint string, provider metric.MeterProvider) (*Client, error) {
 	httpClient := &http.Client{
 		Timeout:   10 * time.Second,
 		Transport: requestIDTransport{next: http.DefaultTransport.(*http.Transport).Clone()},
 	}
-	generated, err := ogen.NewClient(endpoint, ogen.WithClient(httpClient))
+	generated, err := ogen.NewClient(endpoint, ogen.WithClient(httpClient), ogen.WithMeterProvider(provider))
 	if err != nil {
 		httpClient.CloseIdleConnections()
 		return nil, fmt.Errorf("create API client: %w", err)

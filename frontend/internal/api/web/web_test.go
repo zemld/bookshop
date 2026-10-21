@@ -13,12 +13,13 @@ import (
 	publisherservice "bookshop/frontend/internal/services/publishers"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/metric/noop"
 )
 
 const testID = "4e643615-2a28-40a5-8e7d-fbe6dd2d498d"
 
 func createTestHandler(apiURL string) http.Handler {
-	c, err := apiClient.New(apiURL)
+	c, err := apiClient.New(apiURL, noop.NewMeterProvider())
 	if err != nil {
 		panic(err)
 	}
