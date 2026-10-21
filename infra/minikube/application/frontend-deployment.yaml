@@ -26,10 +26,6 @@ spec:
           env:
             - name: API_URL
               value: http://backend:8080
-            - name: WEB_ADDR
-              value: ":8081"
-            - name: METRICS_ADDR
-              value: ":9091"
           readinessProbe:
             httpGet:
               path: /books

@@ -9,7 +9,6 @@ import (
 
 	bookstore "bookshop/backend/internal/adapters/books/postgres"
 	publisherstore "bookshop/backend/internal/adapters/publishers/postgres"
-	"bookshop/backend/internal/api/metrics"
 	"bookshop/backend/internal/api/rest/handler"
 	"bookshop/backend/internal/api/rest/ogen"
 	"bookshop/backend/internal/api/rest/server"
@@ -22,7 +21,6 @@ import (
 	publisherservice "bookshop/backend/internal/services/publishers"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 )
@@ -46,13 +44,6 @@ func New() *fx.App {
 				return slog.New(slog.NewJSONHandler(os.Stdout, nil)).With("service", cfg.Name)
 			},
 			loadServerConfig,
-			prometheus.NewRegistry,
-			func(lifecycle fx.Lifecycle, cfg config.Config, registry *prometheus.Registry) *metrics.Server {
-				server := metrics.NewServer(cfg.Metrics.Address, registry)
-				lifecycle.Append(fx.Hook{OnStart: server.Start, OnStop: server.Stop})
-
-				return server
-			},
 			fx.Annotate(func(db *pgxpool.Pool) *bookstore.Store {
 				return &bookstore.Store{DB: db}
 			}, fx.As(new(bookrepository.Repository))),
@@ -70,12 +61,12 @@ func New() *fx.App {
 			}, fx.As(new(ogen.Handler))),
 			server.NewServer,
 		),
-		fx.Invoke(func(*server.Server, *metrics.Server) {}),
+		fx.Invoke(func(*server.Server) {}),
 	)
 }
 
 func loadServerConfig(cfg config.Config) server.Config {
-	return server.Config{Address: cfg.Server.Address}
+	return server.Config{Address: cfg.Server.Address, MetricsAddress: cfg.Metrics.Address}
 }
 
 func provideDatabase(lifecycle fx.Lifecycle) (*pgxpool.Pool, error) {

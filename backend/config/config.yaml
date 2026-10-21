@@ -3,4 +3,4 @@ service:
 server:
   address: ":8080"
 metrics:
-  address: "127.0.0.1:9090"
+  address: ":9090"
