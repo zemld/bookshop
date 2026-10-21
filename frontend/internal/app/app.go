@@ -57,7 +57,7 @@ func New() *fx.App {
 				}
 			},
 			func(cfg config.Config, handler web.Server, logger *slog.Logger, metrics *metrics.Service) *web.HTTPServer {
-				server := web.NewHTTPServer(cfg.Server.Address, cfg.Metrics.Address, handler.CreateHandler(), web.CreateMetricsHandler(metrics.Registry))
+				server := web.NewHTTPServer(cfg.Server.Address, cfg.Metrics.Address, handler.CreateHandler(), web.NewMetricsHandler(metrics.Registry))
 				server.SetLogger(logger)
 				return server
 			},

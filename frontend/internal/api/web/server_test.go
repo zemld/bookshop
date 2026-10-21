@@ -69,7 +69,7 @@ func TestHTTPServerStart(t *testing.T) {
 			metrics, err := metrics.New()
 			require.NoError(t, err)
 			t.Cleanup(func() { require.NoError(t, metrics.Provider.Shutdown(context.Background())) })
-			s := NewHTTPServer("127.0.0.1:0", "127.0.0.1:0", http.NotFoundHandler(), CreateMetricsHandler(metrics.Registry))
+			s := NewHTTPServer("127.0.0.1:0", "127.0.0.1:0", http.NotFoundHandler(), NewMetricsHandler(metrics.Registry))
 			require.NoError(t, s.Start(context.Background()))
 			t.Cleanup(func() { require.NoError(t, s.Stop(context.Background())) })
 			req, err := http.NewRequest(http.MethodGet, "http://"+s.metricsListener.Addr().String()+"/metrics", nil)

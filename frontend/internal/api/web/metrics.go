@@ -8,7 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func CreateMetricsHandler(registry *prometheus.Registry) http.Handler {
+func NewMetricsHandler(registry *prometheus.Registry) http.Handler {
 	export := promhttp.HandlerFor(registry, promhttp.HandlerOpts{EnableOpenMetrics: true})
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		request := r.Clone(r.Context())

@@ -64,7 +64,7 @@ func New() *fx.App {
 				return handler.Handler{Books: books, Publishers: publishers}
 			}, fx.As(new(ogen.Handler))),
 			func(service *metrics.Service) metric.MeterProvider { return service.Provider },
-			func(service *metrics.Service) http.Handler { return handler.CreateMetricsHandler(service.Registry) },
+			func(service *metrics.Service) http.Handler { return handler.NewMetricsHandler(service.Registry) },
 			server.NewServer,
 		),
 		fx.Invoke(func(*server.Server) {}),
