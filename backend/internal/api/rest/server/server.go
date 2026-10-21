@@ -119,26 +119,36 @@ func New(handler ogen.Handler, logger *slog.Logger) http.Handler {
 }
 
 type Config struct {
-	Address string
+	Address        string
+	MetricsAddress string
 }
 
 type Server struct {
-	http     *http.Server
-	listener net.Listener
-	done     chan error
-	logger   *slog.Logger
+	http            *http.Server
+	listener        net.Listener
+	done            chan error
+	metrics         *http.Server
+	metricsListener net.Listener
+	metricsDone     chan error
+	logger          *slog.Logger
 }
 
 func NewServer(lifecycle fx.Lifecycle, cfg Config, handler ogen.Handler, logger *slog.Logger) *Server {
-	s := newServer(cfg.Address, New(handler, logger))
+	s := newServer(cfg.Address, cfg.MetricsAddress, New(handler, logger))
 	s.logger = logger
 	lifecycle.Append(fx.Hook{OnStart: s.Start, OnStop: s.Stop})
 
 	return s
 }
 
-func newServer(addr string, handler http.Handler) *Server {
-	return &Server{http: &http.Server{Addr: addr, Handler: handler}}
+func newServer(addr, metricsAddr string, handler http.Handler) *Server {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /metrics", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/openmetrics-text; version=1.0.0; charset=utf-8")
+		_, _ = w.Write([]byte("# EOF\n"))
+	})
+
+	return &Server{http: &http.Server{Addr: addr, Handler: handler}, metrics: &http.Server{Addr: metricsAddr, Handler: mux}}
 }
 
 func (s *Server) Start(context.Context) error {
@@ -147,8 +157,18 @@ func (s *Server) Start(context.Context) error {
 		return fmt.Errorf("listen for API: %w", err)
 	}
 
+	metricsListener, err := net.Listen("tcp", s.metrics.Addr)
+	if err != nil {
+		_ = listener.Close()
+		return fmt.Errorf("listen for metrics at %s: %w", s.metrics.Addr, err)
+	}
+
 	s.listener = listener
+	s.metricsListener = metricsListener
 	s.done = make(chan error, 1)
+	s.metricsDone = make(chan error, 1)
+
+	go func() { s.metricsDone <- s.metrics.Serve(metricsListener) }()
 
 	go func() {
 		err := s.http.Serve(listener)
@@ -168,15 +188,33 @@ func (s *Server) Stop(ctx context.Context) error {
 	drain, cancel := context.WithTimeout(ctx, _drainTimeout)
 	defer cancel()
 
+	metricsResult := make(chan error, 1)
+
+	go func() {
+		metricsErr := s.metrics.Shutdown(drain)
+		if metricsErr != nil {
+			_ = s.metrics.Close()
+		}
+
+		metricsResult <- metricsErr
+	}()
+
 	err := s.http.Shutdown(drain)
 	if err != nil {
 		_ = s.http.Close()
 	}
 
+	metricsErr := <-metricsResult
+
 	<-s.done
+	<-s.metricsDone
 
 	if err != nil {
 		return fmt.Errorf("shut down API: %w", err)
+	}
+
+	if metricsErr != nil {
+		return fmt.Errorf("shut down metrics: %w", metricsErr)
 	}
 
 	return nil

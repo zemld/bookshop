@@ -2,3 +2,5 @@ service:
   name: bookshop-api
 server:
   address: ":8080"
+metrics:
+  address: ":9090"

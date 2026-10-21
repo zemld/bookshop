@@ -18,6 +18,9 @@ type Config struct {
 	Server  struct {
 		Address string `koanf:"address"`
 	} `koanf:"server"`
+	Metrics struct {
+		Address string `koanf:"address"`
+	} `koanf:"metrics"`
 	API struct {
 		URL string `koanf:"url"`
 	} `koanf:"api"`
@@ -28,7 +31,7 @@ func Load(path string) (Config, error) {
 	if err := k.Load(file.Provider(path), yaml.Parser()); err != nil {
 		return Config{}, fmt.Errorf("load frontend configuration: %w", err)
 	}
-	for key, env := range map[string]string{"server.address": "WEB_ADDR", "api.url": "API_URL"} {
+	for key, env := range map[string]string{"server.address": "WEB_ADDR", "api.url": "API_URL", "metrics.address": "METRICS_ADDR"} {
 		if value := os.Getenv(env); value != "" {
 			if err := k.Set(key, value); err != nil {
 				return Config{}, fmt.Errorf("override %s: %w", env, err)
@@ -39,8 +42,8 @@ func Load(path string) (Config, error) {
 	if err := k.Unmarshal("", &cfg); err != nil {
 		return Config{}, fmt.Errorf("decode frontend configuration: %w", err)
 	}
-	if cfg.Service.Name == "" || cfg.Server.Address == "" {
-		return Config{}, fmt.Errorf("frontend service.name and server.address are required")
+	if cfg.Service.Name == "" || cfg.Server.Address == "" || cfg.Metrics.Address == "" {
+		return Config{}, fmt.Errorf("frontend service.name, server.address and metrics.address are required")
 	}
 	if cfg.API.URL == "" {
 		return Config{}, fmt.Errorf("API_URL is required")

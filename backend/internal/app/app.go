@@ -66,7 +66,7 @@ func New() *fx.App {
 }
 
 func loadServerConfig(cfg config.Config) server.Config {
-	return server.Config{Address: cfg.Server.Address}
+	return server.Config{Address: cfg.Server.Address, MetricsAddress: cfg.Metrics.Address}
 }
 
 func provideDatabase(lifecycle fx.Lifecycle) (*pgxpool.Pool, error) {

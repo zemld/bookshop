@@ -21,6 +21,8 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+            - name: metrics
+              containerPort: 9090
           envFrom:
             - configMapRef:
                 name: database
@@ -30,8 +32,6 @@ spec:
                 secretKeyRef:
                   name: database
                   key: password
-            - name: API_ADDR
-              value: ":8080"
           readinessProbe:
             httpGet:
               path: /books

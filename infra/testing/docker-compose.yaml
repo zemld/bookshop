@@ -42,7 +42,6 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD:-bookshop}
       PGDATABASE: ${POSTGRES_DB:-bookshop}
       PGSSLMODE: disable
-      API_ADDR: ":8080"
     ports:
       - "127.0.0.1:${API_PORT:-8080}:8080"
     depends_on:
@@ -56,7 +55,6 @@ services:
       dockerfile: deploy/Dockerfile
     environment:
       API_URL: http://backend:8080
-      WEB_ADDR: ":8081"
     ports:
       - "${WEB_PORT:-8081}:8081"
     depends_on:
