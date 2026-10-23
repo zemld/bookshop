@@ -15,6 +15,9 @@ server:
         - job_name: bookshop-frontend
           static_configs:
             - targets: [ "frontend.bookshop.svc:9091" ]
+        - job_name: bookshop-postgres
+          static_configs:
+            - targets: [ "db.bookshop.svc:9187" ]
         - job_name: "kubernetes-apiservers"
           kubernetes_sd_configs:
             - role: endpoints

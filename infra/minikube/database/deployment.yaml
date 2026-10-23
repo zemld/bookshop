@@ -55,6 +55,46 @@ spec:
               memory: 128Mi
             limits:
               memory: 512Mi
+        - name: postgres-exporter
+          image: quay.io/prometheuscommunity/postgres-exporter:v0.18.1
+          ports:
+            - name: metrics
+              containerPort: 9187
+          env:
+            - name: PGDATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: database
+                  key: PGDATABASE
+            - name: DATA_SOURCE_URI
+              value: "127.0.0.1:5432/$(PGDATABASE)?sslmode=disable"
+            - name: DATA_SOURCE_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: database
+                  key: PGUSER
+            - name: DATA_SOURCE_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: database
+                  key: password
+          readinessProbe:
+            httpGet:
+              path: /
+              port: metrics
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
       volumes:
         - name: data
           persistentVolumeClaim:
