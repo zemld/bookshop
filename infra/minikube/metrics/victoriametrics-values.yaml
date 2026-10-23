@@ -9,15 +9,25 @@ server:
         - job_name: victoriametrics
           static_configs:
             - targets: [ "localhost:8428" ]
-        - job_name: bookshop-backend
-          static_configs:
-            - targets: [ "backend.bookshop.svc:9090" ]
-        - job_name: bookshop-frontend
-          static_configs:
-            - targets: [ "frontend.bookshop.svc:9091" ]
-        - job_name: bookshop-postgres
-          static_configs:
-            - targets: [ "db.bookshop.svc:9187" ]
+        - job_name: bookshop-pods
+          kubernetes_sd_configs:
+            - role: pod
+              namespaces:
+                names: [bookshop]
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+              action: keep
+              regex: "true"
+            - source_labels: [__meta_kubernetes_pod_container_port_name]
+              action: keep
+              regex: metrics
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+              target_label: __metrics_path__
+              regex: (.+)
+            - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+              target_label: __address__
+              regex: '(.+):[0-9]+;([0-9]+)'
+              replacement: '${1}:${2}'
         - job_name: "kubernetes-apiservers"
           kubernetes_sd_configs:
             - role: endpoints
