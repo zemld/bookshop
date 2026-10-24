@@ -1,21 +1,31 @@
+CHART_REPOSITORY := https://victoriametrics.github.io/helm-charts/
 VICTORIAMETRICS_CHART_VERSION := 0.49.0
+VMAGENT_CHART_VERSION := 0.49.0
 
-.PHONY: install render open-ui
+.PHONY: install render open-ui open-agent
 
 install:
-	helm repo add vm https://victoriametrics.github.io/helm-charts/
-	helm repo update vm
-	helm upgrade --install vmsingle vm/victoria-metrics-single \
-		--version $(VICTORIAMETRICS_CHART_VERSION) \
-		--kube-context minikube --namespace default \
+	helm upgrade --install vmsingle victoria-metrics-single \
+		--repo $(CHART_REPOSITORY) --version $(VICTORIAMETRICS_CHART_VERSION) \
+		--kube-context minikube --namespace metrics --create-namespace \
 		--values victoriametrics-values.yaml --wait --timeout 5m
+	helm upgrade --install vmagent victoria-metrics-agent \
+		--repo $(CHART_REPOSITORY) --version $(VMAGENT_CHART_VERSION) \
+		--kube-context minikube --namespace metrics \
+		--values vmagent-values.yaml --wait --timeout 5m
 
 render:
 	helm template vmsingle victoria-metrics-single \
-		--repo https://victoriametrics.github.io/helm-charts/ \
-		--version $(VICTORIAMETRICS_CHART_VERSION) \
-		--namespace default --values victoriametrics-values.yaml
+		--repo $(CHART_REPOSITORY) --version $(VICTORIAMETRICS_CHART_VERSION) \
+		--namespace metrics --values victoriametrics-values.yaml
+	helm template vmagent victoria-metrics-agent \
+		--repo $(CHART_REPOSITORY) --version $(VMAGENT_CHART_VERSION) \
+		--namespace metrics --values vmagent-values.yaml
 
 open-ui:
-	kubectl --context=minikube --namespace default \
+	kubectl --context=minikube --namespace metrics \
 		port-forward service/vmsingle-victoria-metrics-single-server 8428:8428
+
+open-agent:
+	kubectl --context=minikube --namespace metrics \
+		port-forward deployment/vmagent-victoria-metrics-agent 8429:8429
