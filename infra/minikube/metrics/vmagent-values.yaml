@@ -21,6 +21,24 @@ config:
     - job_name: victoriametrics
       static_configs:
         - targets: [ "vmsingle-victoria-metrics-single-server:8428" ]
+    - job_name: blackbox-exporter
+      static_configs:
+        - targets: [ "blackbox-exporter:9115" ]
+    - job_name: bookshop-availability
+      scrape_interval: 30s
+      scrape_timeout: 5s
+      metrics_path: /probe
+      params:
+        module: [catalog]
+      static_configs:
+        - targets: [ "http://frontend.bookshop.svc:8081/books" ]
+      relabel_configs:
+        - source_labels: [__address__]
+          target_label: __param_target
+        - source_labels: [__param_target]
+          target_label: instance
+        - target_label: __address__
+          replacement: blackbox-exporter:9115
     - job_name: bookshop-pods
       kubernetes_sd_configs:
         - role: pod

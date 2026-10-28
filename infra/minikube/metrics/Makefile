@@ -9,12 +9,18 @@ install:
 		--repo $(CHART_REPOSITORY) --version $(VICTORIAMETRICS_CHART_VERSION) \
 		--kube-context minikube --namespace metrics --create-namespace \
 		--values victoriametrics-values.yaml --wait --timeout 5m
+	kubectl --context=minikube apply -f blackbox
+	kubectl --context=minikube --namespace metrics \
+		rollout restart deployment/blackbox-exporter
+	kubectl --context=minikube --namespace metrics \
+		rollout status deployment/blackbox-exporter --timeout=120s
 	helm upgrade --install vmagent victoria-metrics-agent \
 		--repo $(CHART_REPOSITORY) --version $(VMAGENT_CHART_VERSION) \
 		--kube-context minikube --namespace metrics \
 		--values vmagent-values.yaml --wait --timeout 5m
 
 render:
+	@for manifest in blackbox/*.yaml; do cat "$$manifest"; printf '\n---\n'; done
 	helm template vmsingle victoria-metrics-single \
 		--repo $(CHART_REPOSITORY) --version $(VICTORIAMETRICS_CHART_VERSION) \
 		--namespace metrics --values victoriametrics-values.yaml
