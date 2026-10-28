@@ -2,7 +2,7 @@ CHART_REPOSITORY := https://victoriametrics.github.io/helm-charts/
 VICTORIAMETRICS_CHART_VERSION := 0.49.0
 VMAGENT_CHART_VERSION := 0.49.0
 
-.PHONY: install render test open-ui open-agent
+.PHONY: install render open-ui open-agent
 
 install:
 	helm upgrade --install vmsingle victoria-metrics-single \
@@ -25,9 +25,6 @@ render:
 	helm template vmagent victoria-metrics-agent \
 		--repo $(CHART_REPOSITORY) --version $(VMAGENT_CHART_VERSION) \
 		--namespace metrics --values vmagent-values.yaml
-
-test:
-	PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s . -p test_blackbox.py
 
 open-ui:
 	kubectl --context=minikube --namespace metrics \
