@@ -1,8 +1,9 @@
 CHART_REPOSITORY := https://victoriametrics.github.io/helm-charts/
 VICTORIAMETRICS_CHART_VERSION := 0.49.0
 VMAGENT_CHART_VERSION := 0.49.0
+VMALERT_CHART_VERSION := 0.52.1
 
-.PHONY: install render open-ui open-agent
+.PHONY: install render open-ui open-agent open-alert
 
 install:
 	helm upgrade --install vmsingle victoria-metrics-single \
@@ -18,6 +19,17 @@ install:
 		--repo $(CHART_REPOSITORY) --version $(VMAGENT_CHART_VERSION) \
 		--kube-context minikube --namespace metrics \
 		--values vmagent-values.yaml --wait --timeout 5m
+	kubectl --context=minikube --namespace metrics create configmap vmalert-rules \
+		--from-file=alert-rules.yaml=rules/alert-rules.yaml --dry-run=client -o yaml \
+		| kubectl --context=minikube apply -f -
+	helm upgrade --install vmalert victoria-metrics-alert \
+		--repo $(CHART_REPOSITORY) --version $(VMALERT_CHART_VERSION) \
+		--kube-context minikube --namespace metrics \
+		--values vmalert-values.yaml --wait --timeout 5m
+	kubectl --context=minikube --namespace metrics \
+		rollout restart deployment/vmalert-victoria-metrics-alert-server
+	kubectl --context=minikube --namespace metrics \
+		rollout status deployment/vmalert-victoria-metrics-alert-server --timeout=120s
 
 render:
 	@for manifest in blackbox/*.yaml; do cat "$$manifest"; printf '\n---\n'; done
@@ -27,6 +39,9 @@ render:
 	helm template vmagent victoria-metrics-agent \
 		--repo $(CHART_REPOSITORY) --version $(VMAGENT_CHART_VERSION) \
 		--namespace metrics --values vmagent-values.yaml
+	helm template vmalert victoria-metrics-alert \
+		--repo $(CHART_REPOSITORY) --version $(VMALERT_CHART_VERSION) \
+		--namespace metrics --values vmalert-values.yaml
 
 open-ui:
 	kubectl --context=minikube --namespace metrics \
@@ -35,3 +50,7 @@ open-ui:
 open-agent:
 	kubectl --context=minikube --namespace metrics \
 		port-forward deployment/vmagent-victoria-metrics-agent 8429:8429
+
+open-alert:
+	kubectl --context=minikube --namespace metrics \
+		port-forward service/vmalert-victoria-metrics-alert-server 8880:8880

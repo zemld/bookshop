@@ -1,0 +1,85 @@
+groups:
+  - name: bookshop-slo
+    interval: 1m
+    rules:
+      - record: bookshop:catalog_probe_error_ratio:1h
+        expr: 1 - avg_over_time(probe_success{job="bookshop-availability"}[1h])
+      - record: bookshop:catalog_probe_error_ratio:5m
+        expr: 1 - avg_over_time(probe_success{job="bookshop-availability"}[5m])
+
+      - record: bookshop:list_books_slow_ratio:1h
+        expr: |
+          1 -
+          sum(increase(ogen_server_duration_milliseconds_bucket{job="bookshop-pods", oas_operation="listBooks", http_response_status_code="200", le=~"500(\\.0)?"}[1h]))
+          /
+          (sum(increase(ogen_server_duration_milliseconds_count{job="bookshop-pods", oas_operation="listBooks", http_response_status_code="200"}[1h])) > 0)
+      - record: bookshop:list_books_slow_ratio:5m
+        expr: |
+          1 -
+          sum(increase(ogen_server_duration_milliseconds_bucket{job="bookshop-pods", oas_operation="listBooks", http_response_status_code="200", le=~"500(\\.0)?"}[5m]))
+          /
+          (sum(increase(ogen_server_duration_milliseconds_count{job="bookshop-pods", oas_operation="listBooks", http_response_status_code="200"}[5m])) > 0)
+
+      - record: bookshop:write_error_ratio:1h
+        expr: |
+          (
+            (sum(increase(ogen_server_request_count_total{job="bookshop-pods", oas_operation=~"createBook|createPublisher", http_response_status_code!~"200|400|409"}[1h])) or vector(0))
+            +
+            (sum(increase(ogen_server_request_count_total{job="bookshop-pods", oas_operation=~"updateBook|updatePublisher", http_response_status_code!~"200|400|404|409"}[1h])) or vector(0))
+          )
+          /
+          (
+            (
+              (sum(increase(ogen_server_request_count_total{job="bookshop-pods", oas_operation=~"createBook|createPublisher", http_response_status_code!~"400|409"}[1h])) or vector(0))
+              +
+              (sum(increase(ogen_server_request_count_total{job="bookshop-pods", oas_operation=~"updateBook|updatePublisher", http_response_status_code!~"400|404|409"}[1h])) or vector(0))
+            ) > 0
+          )
+      - record: bookshop:write_error_ratio:5m
+        expr: |
+          (
+            (sum(increase(ogen_server_request_count_total{job="bookshop-pods", oas_operation=~"createBook|createPublisher", http_response_status_code!~"200|400|409"}[5m])) or vector(0))
+            +
+            (sum(increase(ogen_server_request_count_total{job="bookshop-pods", oas_operation=~"updateBook|updatePublisher", http_response_status_code!~"200|400|404|409"}[5m])) or vector(0))
+          )
+          /
+          (
+            (
+              (sum(increase(ogen_server_request_count_total{job="bookshop-pods", oas_operation=~"createBook|createPublisher", http_response_status_code!~"400|409"}[5m])) or vector(0))
+              +
+              (sum(increase(ogen_server_request_count_total{job="bookshop-pods", oas_operation=~"updateBook|updatePublisher", http_response_status_code!~"400|404|409"}[5m])) or vector(0))
+            ) > 0
+          )
+
+      - alert: CatalogUnavailable
+        expr: bookshop:catalog_probe_error_ratio:1h > 0.072 and bookshop:catalog_probe_error_ratio:5m > 0.072
+        labels:
+          severity: critical
+          sli: availability
+        annotations:
+          summary: "Каталог недоступен: доля неуспешных проб превышает 7,2% за час и за последние 5 минут"
+
+      - alert: CatalogReadSlow
+        expr: bookshop:list_books_slow_ratio:1h > 0.30 and bookshop:list_books_slow_ratio:5m > 0.30
+        labels:
+          severity: warning
+          sli: read_latency
+        annotations:
+          summary: "Чтение каталога медленное: более 30% успешных ответов listBooks медленнее 500 мс за час и за последние 5 минут"
+
+      - alert: CatalogWriteFailing
+        expr: bookshop:write_error_ratio:1h > 0.144 and bookshop:write_error_ratio:5m > 0.144
+        labels:
+          severity: critical
+          sli: write_success
+        annotations:
+          summary: "Запись в каталог падает: доля неуспешных запросов записи превышает 14,4% за час и за последние 5 минут"
+
+      - alert: CatalogProbeNoData
+        expr: up{job="bookshop-availability"} == 0 or absent(probe_success{job="bookshop-availability"})
+        for: 5m
+        labels:
+          severity: warning
+          sli: availability
+        annotations:
+          summary: "Пробер каталога не отдаёт данные: доступность каталога не проверяется"

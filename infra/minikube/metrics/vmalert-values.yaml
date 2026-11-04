@@ -1,0 +1,9 @@
+server:
+  replicaCount: 1
+  datasource:
+    url: http://vmsingle-victoria-metrics-single-server:8428
+  remoteWrite:
+    url: http://vmsingle-victoria-metrics-single-server:8428
+  configMap: vmalert-rules
+  extraArgs:
+    notifier.blackhole: true
