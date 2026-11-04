@@ -3,7 +3,7 @@ VICTORIAMETRICS_CHART_VERSION := 0.49.0
 VMAGENT_CHART_VERSION := 0.49.0
 VMALERT_CHART_VERSION := 0.52.1
 
-.PHONY: install render open-ui open-agent open-alert
+.PHONY: install render open-ui open-agent open-alert open-alertmanager
 
 install:
 	helm upgrade --install vmsingle victoria-metrics-single \
@@ -54,3 +54,7 @@ open-agent:
 open-alert:
 	kubectl --context=minikube --namespace metrics \
 		port-forward service/vmalert-victoria-metrics-alert-server 8880:8880
+
+open-alertmanager:
+	kubectl --context=minikube --namespace metrics \
+		port-forward service/vmalert-victoria-metrics-alert-alertmanager 9093:9093
