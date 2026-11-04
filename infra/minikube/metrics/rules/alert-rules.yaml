@@ -83,3 +83,23 @@ groups:
           sli: availability
         annotations:
           summary: "Пробер каталога не отдаёт данные: доступность каталога не проверяется"
+
+  - name: bookshop-runtime
+    interval: 1m
+    rules:
+      - alert: PodMemoryNearLimit
+        expr: |
+          container_memory_working_set_bytes{namespace="bookshop"}
+          / container_spec_memory_limit_bytes{namespace="bookshop"} > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Под {{ $labels.pod }} использует более 90% лимита памяти"
+
+      - alert: ProcessRestarted
+        expr: changes_prometheus(process_start_time_seconds{job="bookshop-pods"}[15m]) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Контейнер в поде {{ $labels.pod }} перезапускался за последние 15 минут"

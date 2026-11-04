@@ -58,6 +58,8 @@ config:
           target_label: __address__
           regex: '(.+):[0-9]+;([0-9]+)'
           replacement: '${1}:${2}'
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
     - job_name: "kubernetes-apiservers"
       kubernetes_sd_configs:
         - role: endpoints
