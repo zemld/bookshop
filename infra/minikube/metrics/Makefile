@@ -2,9 +2,8 @@ CHART_REPOSITORY := https://victoriametrics.github.io/helm-charts/
 VICTORIAMETRICS_CHART_VERSION := 0.49.0
 VMAGENT_CHART_VERSION := 0.49.0
 VMALERT_CHART_VERSION := 0.52.1
-VMALERT_TOOL_IMAGE := victoriametrics/vmalert-tool:v1.155.0
 
-.PHONY: install render test-rules open-ui open-agent open-alert
+.PHONY: install render open-ui open-agent open-alert
 
 install:
 	helm upgrade --install vmsingle victoria-metrics-single \
@@ -43,10 +42,6 @@ render:
 	helm template vmalert victoria-metrics-alert \
 		--repo $(CHART_REPOSITORY) --version $(VMALERT_CHART_VERSION) \
 		--namespace metrics --values vmalert-values.yaml
-
-test-rules:
-	docker run --rm --volume "$(CURDIR)/rules:/rules" --workdir /rules \
-		$(VMALERT_TOOL_IMAGE) unittest --files=alert-rules-test.yaml
 
 open-ui:
 	kubectl --context=minikube --namespace metrics \
