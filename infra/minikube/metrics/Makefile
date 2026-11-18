@@ -8,53 +8,53 @@ VMALERT_CHART_VERSION := 0.52.1
 install:
 	helm upgrade --install vmsingle victoria-metrics-single \
 		--repo $(CHART_REPOSITORY) --version $(VICTORIAMETRICS_CHART_VERSION) \
-		--kube-context minikube --namespace metrics --create-namespace \
+		--kube-context minikube --namespace monitoring --create-namespace \
 		--values victoriametrics-values.yaml --wait --timeout 5m
 	kubectl --context=minikube apply -f blackbox
-	kubectl --context=minikube --namespace metrics \
+	kubectl --context=minikube --namespace monitoring \
 		rollout restart deployment/blackbox-exporter
-	kubectl --context=minikube --namespace metrics \
+	kubectl --context=minikube --namespace monitoring \
 		rollout status deployment/blackbox-exporter --timeout=120s
 	helm upgrade --install vmagent victoria-metrics-agent \
 		--repo $(CHART_REPOSITORY) --version $(VMAGENT_CHART_VERSION) \
-		--kube-context minikube --namespace metrics \
+		--kube-context minikube --namespace monitoring \
 		--values vmagent-values.yaml --wait --timeout 5m
-	kubectl --context=minikube --namespace metrics create configmap vmalert-rules \
+	kubectl --context=minikube --namespace monitoring create configmap vmalert-rules \
 		--from-file=alert-rules.yaml=rules/alert-rules.yaml --dry-run=client -o yaml \
 		| kubectl --context=minikube apply -f -
 	helm upgrade --install vmalert victoria-metrics-alert \
 		--repo $(CHART_REPOSITORY) --version $(VMALERT_CHART_VERSION) \
-		--kube-context minikube --namespace metrics \
+		--kube-context minikube --namespace monitoring \
 		--values vmalert-values.yaml --wait --timeout 5m
-	kubectl --context=minikube --namespace metrics \
+	kubectl --context=minikube --namespace monitoring \
 		rollout restart deployment/vmalert-victoria-metrics-alert-server
-	kubectl --context=minikube --namespace metrics \
+	kubectl --context=minikube --namespace monitoring \
 		rollout status deployment/vmalert-victoria-metrics-alert-server --timeout=120s
 
 render:
 	@for manifest in blackbox/*.yaml; do cat "$$manifest"; printf '\n---\n'; done
 	helm template vmsingle victoria-metrics-single \
 		--repo $(CHART_REPOSITORY) --version $(VICTORIAMETRICS_CHART_VERSION) \
-		--namespace metrics --values victoriametrics-values.yaml
+		--namespace monitoring --values victoriametrics-values.yaml
 	helm template vmagent victoria-metrics-agent \
 		--repo $(CHART_REPOSITORY) --version $(VMAGENT_CHART_VERSION) \
-		--namespace metrics --values vmagent-values.yaml
+		--namespace monitoring --values vmagent-values.yaml
 	helm template vmalert victoria-metrics-alert \
 		--repo $(CHART_REPOSITORY) --version $(VMALERT_CHART_VERSION) \
-		--namespace metrics --values vmalert-values.yaml
+		--namespace monitoring --values vmalert-values.yaml
 
 open-ui:
-	kubectl --context=minikube --namespace metrics \
+	kubectl --context=minikube --namespace monitoring \
 		port-forward service/vmsingle-victoria-metrics-single-server 8428:8428
 
 open-agent:
-	kubectl --context=minikube --namespace metrics \
+	kubectl --context=minikube --namespace monitoring \
 		port-forward deployment/vmagent-victoria-metrics-agent 8429:8429
 
 open-alert:
-	kubectl --context=minikube --namespace metrics \
+	kubectl --context=minikube --namespace monitoring \
 		port-forward service/vmalert-victoria-metrics-alert-server 8880:8880
 
 open-alertmanager:
-	kubectl --context=minikube --namespace metrics \
+	kubectl --context=minikube --namespace monitoring \
 		port-forward service/vmalert-victoria-metrics-alert-alertmanager 9093:9093

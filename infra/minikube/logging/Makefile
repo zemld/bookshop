@@ -7,21 +7,21 @@ COLLECTOR_CHART_VERSION := 0.3.8
 install:
 	helm upgrade --install victoria-logs victoria-logs-single \
 		--repo $(CHART_REPOSITORY) --version $(VICTORIALOGS_CHART_VERSION) \
-		--kube-context minikube --namespace logging --create-namespace \
+		--kube-context minikube --namespace monitoring --create-namespace \
 		--values victorialogs-values.yaml --wait --timeout 5m
 	helm upgrade --install victoria-logs-collector victoria-logs-collector \
 		--repo $(CHART_REPOSITORY) --version $(COLLECTOR_CHART_VERSION) \
-		--kube-context minikube --namespace logging \
+		--kube-context minikube --namespace monitoring \
 		--values collector-values.yaml --wait --timeout 5m
 
 render:
 	helm template victoria-logs victoria-logs-single \
 		--repo $(CHART_REPOSITORY) --version $(VICTORIALOGS_CHART_VERSION) \
-		--namespace logging --values victorialogs-values.yaml
+		--namespace monitoring --values victorialogs-values.yaml
 	helm template victoria-logs-collector victoria-logs-collector \
 		--repo $(CHART_REPOSITORY) --version $(COLLECTOR_CHART_VERSION) \
-		--namespace logging --values collector-values.yaml
+		--namespace monitoring --values collector-values.yaml
 
 open-ui:
-	kubectl --context=minikube --namespace logging \
+	kubectl --context=minikube --namespace monitoring \
 		port-forward service/victoria-logs 9428:9428

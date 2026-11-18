@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: blackbox-config
-  namespace: metrics
+  namespace: monitoring
 data:
   blackbox.yml: |
     modules:
