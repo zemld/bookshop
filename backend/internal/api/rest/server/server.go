@@ -134,17 +134,8 @@ type Server struct {
 	logger          *slog.Logger
 }
 
-type Health interface {
-	ServeLiveness(http.ResponseWriter, *http.Request)
-	ServeReadiness(http.ResponseWriter, *http.Request)
-}
-
-func NewServer(lifecycle fx.Lifecycle, cfg Config, api ogen.Handler, logger *slog.Logger, provider metric.MeterProvider, metricsHandler http.Handler, health Health) *Server {
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /livez", health.ServeLiveness)
-	mux.HandleFunc("GET /readyz", health.ServeReadiness)
-	mux.Handle("/", New(api, logger, provider))
-	s := newServer(cfg.Address, cfg.MetricsAddress, mux, metricsHandler)
+func NewServer(lifecycle fx.Lifecycle, cfg Config, handler ogen.Handler, logger *slog.Logger, provider metric.MeterProvider, metricsHandler http.Handler) *Server {
+	s := newServer(cfg.Address, cfg.MetricsAddress, New(handler, logger, provider), metricsHandler)
 	s.logger = logger
 	lifecycle.Append(fx.Hook{OnStart: s.Start, OnStop: s.Stop})
 

@@ -4,26 +4,25 @@ import (
 	"context"
 	"net/http"
 	"time"
+
+	"bookshop/backend/internal/api/rest/ogen"
 )
 
 const _readinessTimeout = 500 * time.Millisecond
 
-type Health struct {
-	CheckReadiness func(context.Context) error
+func (Handler) CheckLiveness(context.Context) error {
+	return nil
 }
 
-func (h Health) ServeLiveness(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
-}
-
-func (h Health) ServeReadiness(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), _readinessTimeout)
+func (h Handler) CheckReadiness(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, _readinessTimeout)
 	defer cancel()
 
-	if err := h.CheckReadiness(ctx); err != nil {
-		w.WriteHeader(http.StatusServiceUnavailable)
-		return
+	if err := h.CheckDatabase(ctx); err != nil {
+		return &ogen.ErrorStatusCodeWithHeaders{
+			StatusCode: http.StatusServiceUnavailable,
+			Response:   ogen.Problem{Error: ogen.ProblemErrorInternalError},
+		}
 	}
-
-	w.WriteHeader(http.StatusOK)
+	return nil
 }

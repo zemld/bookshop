@@ -3,6 +3,20 @@ info:
   title: Book catalog API
   version: 1.0.0
 paths:
+  /livez:
+    get:
+      operationId: checkLiveness
+      responses:
+        '200':
+          description: HTTP server is alive
+        default: { $ref: '#/components/responses/Error' }
+  /readyz:
+    get:
+      operationId: checkReadiness
+      responses:
+        '200':
+          description: Database is reachable
+        default: { $ref: '#/components/responses/Error' }
   /publishers:
     get:
       operationId: listPublishers

@@ -13,6 +13,20 @@ type UnimplementedHandler struct{}
 
 var _ Handler = UnimplementedHandler{}
 
+// CheckLiveness implements checkLiveness operation.
+//
+// GET /livez
+func (UnimplementedHandler) CheckLiveness(ctx context.Context) error {
+	return ht.ErrNotImplemented
+}
+
+// CheckReadiness implements checkReadiness operation.
+//
+// GET /readyz
+func (UnimplementedHandler) CheckReadiness(ctx context.Context) error {
+	return ht.ErrNotImplemented
+}
+
 // CreateBook implements createBook operation.
 //
 // POST /books

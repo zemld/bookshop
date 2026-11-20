@@ -18,7 +18,7 @@ case "$action" in
         trap 'rm -rf "$source_dir"' EXIT
         git archive "$revision" | tar -x -C "$source_dir"
         for service in backend frontend; do
-            docker build --build-arg "VERSION=$version" --build-arg "REVISION=$revision" \
+            docker build --build-arg "VERSION=${version#v}" --build-arg "REVISION=$revision" \
                 -t "bookshop-$service:$version" -f "$source_dir/$service/deploy/Dockerfile" "$source_dir/$service"
         done
         docker build -t "bookshop-migrate:$version" \

@@ -8,6 +8,14 @@ import (
 
 // Handler handles operations described by OpenAPI v3 specification.
 type Handler interface {
+	// CheckLiveness implements checkLiveness operation.
+	//
+	// GET /livez
+	CheckLiveness(ctx context.Context) error
+	// CheckReadiness implements checkReadiness operation.
+	//
+	// GET /readyz
+	CheckReadiness(ctx context.Context) error
 	// CreateBook implements createBook operation.
 	//
 	// POST /books

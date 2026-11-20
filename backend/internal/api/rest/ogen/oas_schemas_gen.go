@@ -213,6 +213,12 @@ func (s *BookInput) SetQuantity(val int64) {
 	s.Quantity = val
 }
 
+// CheckLivenessOK is response for CheckLiveness operation.
+type CheckLivenessOK struct{}
+
+// CheckReadinessOK is response for CheckReadiness operation.
+type CheckReadinessOK struct{}
+
 // Ref: #/components/schemas/Deleted
 type Deleted struct {
 	Status string `json:"status"`

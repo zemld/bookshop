@@ -15,6 +15,20 @@ import (
 	"github.com/ogen-go/ogen/uri"
 )
 
+func encodeCheckLivenessResponse(response *CheckLivenessOK, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(200)
+	span.SetStatus(codes.Ok, http.StatusText(200))
+
+	return nil
+}
+
+func encodeCheckReadinessResponse(response *CheckReadinessOK, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(200)
+	span.SetStatus(codes.Ok, http.StatusText(200))
+
+	return nil
+}
+
 func encodeCreateBookResponse(response *BookHeaders, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	// Encoding response headers.

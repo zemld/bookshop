@@ -48,7 +48,6 @@ func New() *fx.App {
 				return slog.New(slog.NewJSONHandler(os.Stdout, nil)).With("service", cfg.Name)
 			},
 			loadServerConfig,
-			func(db *pgxpool.Pool) server.Health { return handler.Health{CheckReadiness: db.Ping} },
 			fx.Annotate(func(db *pgxpool.Pool) *bookstore.Store {
 				return &bookstore.Store{DB: db}
 			}, fx.As(new(bookrepository.Repository))),
@@ -61,8 +60,8 @@ func New() *fx.App {
 			fx.Annotate(func(repo publisherrepository.Repository) *publisherservice.Service {
 				return &publisherservice.Service{Repository: repo}
 			}, fx.As(new(publishers.Publishers))),
-			fx.Annotate(func(books books.Books, publishers publishers.Publishers) handler.Handler {
-				return handler.Handler{Books: books, Publishers: publishers}
+			fx.Annotate(func(books books.Books, publishers publishers.Publishers, db *pgxpool.Pool) handler.Handler {
+				return handler.Handler{Books: books, Publishers: publishers, CheckDatabase: db.Ping}
 			}, fx.As(new(ogen.Handler))),
 			func(service *metrics.Service) metric.MeterProvider { return service.Provider },
 			func(service *metrics.Service) http.Handler { return handler.NewMetricsHandler(service.Registry) },

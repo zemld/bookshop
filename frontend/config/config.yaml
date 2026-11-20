@@ -1,6 +1,5 @@
 service:
   name: bookshop-web
-  version: dev
 server:
   address: ":8081"
 metrics:
