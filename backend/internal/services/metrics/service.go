@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
@@ -32,4 +33,25 @@ func New() (*Service, error) {
 	provider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(exporter))
 
 	return &Service{Provider: provider, Registry: registry}, nil
+}
+
+var (
+	version  = "dev"
+	revision = "unknown"
+)
+
+func (s *Service) RegisterBuildInfo(service string, logger *slog.Logger) error {
+	info := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "bookshop_build_info",
+		Help: "Build information for the running Bookshop service.",
+		ConstLabels: prometheus.Labels{
+			"service": service, "version": version, "revision": revision,
+		},
+	})
+	info.Set(1)
+	if err := s.Registry.Register(info); err != nil {
+		return fmt.Errorf("register build info: %w", err)
+	}
+	logger.Info("loaded service build", "event", "service.build", "version", version, "revision", revision)
+	return nil
 }

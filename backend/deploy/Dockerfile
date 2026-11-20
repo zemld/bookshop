@@ -4,7 +4,11 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY cmd ./cmd
 COPY internal ./internal
-RUN CGO_ENABLED=0 go build -buildvcs=false -o /app ./cmd
+ARG VERSION=dev
+ARG REVISION=unknown
+RUN CGO_ENABLED=0 go build -buildvcs=false \
+    -ldflags "-X bookshop/backend/internal/services/metrics.version=${VERSION} -X bookshop/backend/internal/services/metrics.revision=${REVISION}" \
+    -o /app ./cmd
 
 FROM alpine:3.21
 COPY --from=build /app /app

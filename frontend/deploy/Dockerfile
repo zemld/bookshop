@@ -5,7 +5,11 @@ RUN go mod download
 COPY cmd ./cmd
 COPY internal ./internal
 RUN go run github.com/a-h/templ/cmd/templ@v0.3.960 generate
-RUN CGO_ENABLED=0 go build -buildvcs=false -o /app ./cmd
+ARG VERSION=dev
+ARG REVISION=unknown
+RUN CGO_ENABLED=0 go build -buildvcs=false \
+    -ldflags "-X bookshop/frontend/internal/services/metrics.version=${VERSION} -X bookshop/frontend/internal/services/metrics.revision=${REVISION}" \
+    -o /app ./cmd
 
 FROM alpine:3.21
 COPY --from=build /app /app

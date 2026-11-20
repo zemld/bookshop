@@ -122,6 +122,7 @@ func New(handler ogen.Handler, logger *slog.Logger, provider metric.MeterProvide
 type Config struct {
 	Address        string
 	MetricsAddress string
+	CheckReadiness func(context.Context) error
 }
 
 type Server struct {
@@ -135,11 +136,29 @@ type Server struct {
 }
 
 func NewServer(lifecycle fx.Lifecycle, cfg Config, handler ogen.Handler, logger *slog.Logger, provider metric.MeterProvider, metricsHandler http.Handler) *Server {
-	s := newServer(cfg.Address, cfg.MetricsAddress, New(handler, logger, provider), metricsHandler)
+	s := newServer(cfg.Address, cfg.MetricsAddress, createProbeHandler(New(handler, logger, provider), cfg.CheckReadiness), metricsHandler)
 	s.logger = logger
 	lifecycle.Append(fx.Hook{OnStart: s.Start, OnStop: s.Stop})
 
 	return s
+}
+
+func createProbeHandler(handler http.Handler, checkReadiness func(context.Context) error) http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /livez", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), 500*time.Millisecond)
+		defer cancel()
+		if err := checkReadiness(ctx); err != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+	mux.Handle("/", handler)
+	return mux
 }
 
 func newServer(addr, metricsAddr string, handler, metricsHandler http.Handler) *Server {

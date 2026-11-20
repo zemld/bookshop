@@ -69,11 +69,15 @@ func New() *fx.App {
 	)
 }
 
-func provideMetrics(lifecycle fx.Lifecycle) (*metrics.Service, error) {
+func provideMetrics(lifecycle fx.Lifecycle, cfg config.ServiceConfig, logger *slog.Logger) (*metrics.Service, error) {
 	service, err := metrics.New()
 	if err != nil {
 		return nil, fmt.Errorf("initialize metrics: %w", err)
 	}
+	if err := service.RegisterBuildInfo(cfg.Name, logger); err != nil {
+		return nil, err
+	}
+
 	lifecycle.Append(fx.Hook{OnStop: service.Provider.Shutdown})
 	return service, nil
 }

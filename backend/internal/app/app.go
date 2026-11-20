@@ -28,10 +28,7 @@ import (
 	"go.uber.org/fx/fxevent"
 )
 
-const (
-	_startupTimeout = 10 * time.Second
-	_stopTimeout    = 12 * time.Second
-)
+const _stopTimeout = 12 * time.Second
 
 func New() *fx.App {
 	return fx.New(
@@ -71,10 +68,14 @@ func New() *fx.App {
 	)
 }
 
-func provideMetrics(lifecycle fx.Lifecycle) (*metrics.Service, error) {
+func provideMetrics(lifecycle fx.Lifecycle, cfg config.ServiceConfig, logger *slog.Logger) (*metrics.Service, error) {
 	service, err := metrics.New()
 	if err != nil {
 		return nil, fmt.Errorf("initialize metrics: %w", err)
+	}
+
+	if err := service.RegisterBuildInfo(cfg.Name, logger); err != nil {
+		return nil, err
 	}
 
 	lifecycle.Append(fx.Hook{OnStop: service.Provider.Shutdown})
@@ -82,25 +83,16 @@ func provideMetrics(lifecycle fx.Lifecycle) (*metrics.Service, error) {
 	return service, nil
 }
 
-func loadServerConfig(cfg config.Config) server.Config {
-	return server.Config{Address: cfg.Server.Address, MetricsAddress: cfg.Metrics.Address}
+func loadServerConfig(cfg config.Config, db *pgxpool.Pool) server.Config {
+	return server.Config{
+		Address: cfg.Server.Address, MetricsAddress: cfg.Metrics.Address, CheckReadiness: db.Ping,
+	}
 }
 
 func provideDatabase(lifecycle fx.Lifecycle) (*pgxpool.Pool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), _startupTimeout)
-	defer cancel()
-
-	db, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
-	if err == nil {
-		err = db.Ping(ctx)
-	}
-
+	db, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
 	if err != nil {
-		if db != nil {
-			db.Close()
-		}
-
-		return nil, fmt.Errorf("connect to database: %w", err)
+		return nil, fmt.Errorf("configure database pool: %w", err)
 	}
 
 	lifecycle.Append(fx.Hook{OnStop: func(context.Context) error {
