@@ -11,7 +11,9 @@ import (
 )
 
 type ServiceConfig struct {
-	Name string `koanf:"name"`
+	Name     string `koanf:"name"`
+	Version  string `koanf:"version"`
+	Revision string `koanf:"revision"`
 }
 
 type Config struct {
@@ -30,15 +32,14 @@ func Load(path string) (Config, error) {
 		return Config{}, fmt.Errorf("load backend configuration: %w", err)
 	}
 
-	if value := os.Getenv("API_ADDR"); value != "" {
-		if err := k.Set("server.address", value); err != nil {
-			return Config{}, fmt.Errorf("override API_ADDR: %w", err)
-		}
-	}
-
-	if value := os.Getenv("METRICS_ADDR"); value != "" {
-		if err := k.Set("metrics.address", value); err != nil {
-			return Config{}, fmt.Errorf("override METRICS_ADDR: %w", err)
+	for key, env := range map[string]string{
+		"server.address": "API_ADDR", "metrics.address": "METRICS_ADDR",
+		"service.version": "APP_VERSION", "service.revision": "APP_REVISION",
+	} {
+		if value := os.Getenv(env); value != "" {
+			if err := k.Set(key, value); err != nil {
+				return Config{}, fmt.Errorf("override %s: %w", env, err)
+			}
 		}
 	}
 

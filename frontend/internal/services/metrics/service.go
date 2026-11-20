@@ -29,3 +29,25 @@ func New() (*Service, error) {
 	provider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(exporter))
 	return &Service{Provider: provider, Registry: registry}, nil
 }
+
+const (
+	_buildInfoName  = "bookshop_build_info"
+	_buildInfoValue = 1
+	_serviceLabel   = "service"
+	_versionLabel   = "version"
+	_revisionLabel  = "revision"
+)
+
+func (s *Service) RegisterBuildInfo(service, version, revision string) error {
+	info := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: _buildInfoName,
+		Help: "Build information for the running Bookshop service.",
+		ConstLabels: prometheus.Labels{
+			_serviceLabel: service, _versionLabel: version, _revisionLabel: revision,
+		},
+	}, func() float64 { return _buildInfoValue })
+	if err := s.Registry.Register(info); err != nil {
+		return fmt.Errorf("register build info: %w", err)
+	}
+	return nil
+}

@@ -10,7 +10,9 @@ import (
 )
 
 type ServiceConfig struct {
-	Name string `koanf:"name"`
+	Name     string `koanf:"name"`
+	Version  string `koanf:"version"`
+	Revision string `koanf:"revision"`
 }
 
 type Config struct {
@@ -31,7 +33,10 @@ func Load(path string) (Config, error) {
 	if err := k.Load(file.Provider(path), yaml.Parser()); err != nil {
 		return Config{}, fmt.Errorf("load frontend configuration: %w", err)
 	}
-	for key, env := range map[string]string{"server.address": "WEB_ADDR", "api.url": "API_URL", "metrics.address": "METRICS_ADDR"} {
+	for key, env := range map[string]string{
+		"server.address": "WEB_ADDR", "api.url": "API_URL", "metrics.address": "METRICS_ADDR",
+		"service.version": "APP_VERSION", "service.revision": "APP_REVISION",
+	} {
 		if value := os.Getenv(env); value != "" {
 			if err := k.Set(key, value); err != nil {
 				return Config{}, fmt.Errorf("override %s: %w", env, err)
