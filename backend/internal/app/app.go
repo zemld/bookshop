@@ -28,7 +28,10 @@ import (
 	"go.uber.org/fx/fxevent"
 )
 
-const _stopTimeout = 12 * time.Second
+const (
+	_startupTimeout = 10 * time.Second
+	_stopTimeout    = 12 * time.Second
+)
 
 func New() *fx.App {
 	return fx.New(
@@ -45,6 +48,7 @@ func New() *fx.App {
 				return slog.New(slog.NewJSONHandler(os.Stdout, nil)).With("service", cfg.Name)
 			},
 			loadServerConfig,
+			func(db *pgxpool.Pool) server.Health { return handler.Health{CheckReadiness: db.Ping} },
 			fx.Annotate(func(db *pgxpool.Pool) *bookstore.Store {
 				return &bookstore.Store{DB: db}
 			}, fx.As(new(bookrepository.Repository))),
@@ -74,25 +78,35 @@ func provideMetrics(lifecycle fx.Lifecycle, cfg config.ServiceConfig, logger *sl
 		return nil, fmt.Errorf("initialize metrics: %w", err)
 	}
 
-	if err := service.RegisterBuildInfo(cfg.Name, logger); err != nil {
+	if err := service.RegisterBuildInfo(cfg.Name, cfg.Version, cfg.Revision); err != nil {
 		return nil, err
 	}
 
+	logger.Info("loaded service build", "event", "service.build", "version", cfg.Version, "revision", cfg.Revision)
 	lifecycle.Append(fx.Hook{OnStop: service.Provider.Shutdown})
 
 	return service, nil
 }
 
-func loadServerConfig(cfg config.Config, db *pgxpool.Pool) server.Config {
-	return server.Config{
-		Address: cfg.Server.Address, MetricsAddress: cfg.Metrics.Address, CheckReadiness: db.Ping,
-	}
+func loadServerConfig(cfg config.Config) server.Config {
+	return server.Config{Address: cfg.Server.Address, MetricsAddress: cfg.Metrics.Address}
 }
 
 func provideDatabase(lifecycle fx.Lifecycle) (*pgxpool.Pool, error) {
-	db, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
+	ctx, cancel := context.WithTimeout(context.Background(), _startupTimeout)
+	defer cancel()
+
+	db, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
+	if err == nil {
+		err = db.Ping(ctx)
+	}
+
 	if err != nil {
-		return nil, fmt.Errorf("configure database pool: %w", err)
+		if db != nil {
+			db.Close()
+		}
+
+		return nil, fmt.Errorf("connect to database: %w", err)
 	}
 
 	lifecycle.Append(fx.Hook{OnStop: func(context.Context) error {

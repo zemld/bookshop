@@ -32,5 +32,9 @@ func (s Server) CreateHandler() http.Handler {
 	})
 	s.registerPublisherRoutes(m)
 	s.registerBookRoutes(m)
-	return NewRequestLoggingMiddleware(m, s.Logger)
+	probes := http.NewServeMux()
+	probes.HandleFunc("GET /livez", serveHealth)
+	probes.HandleFunc("GET /readyz", serveHealth)
+	probes.Handle("/", NewRequestLoggingMiddleware(m, s.Logger))
+	return probes
 }

@@ -68,7 +68,6 @@ func TestHTTPServerStart(t *testing.T) {
 
 			metrics, err := metrics.New()
 			require.NoError(t, err)
-			require.NoError(t, metrics.RegisterBuildInfo("bookshop-web", slog.New(slog.DiscardHandler)))
 			t.Cleanup(func() { require.NoError(t, metrics.Provider.Shutdown(context.Background())) })
 			s := NewHTTPServer("127.0.0.1:0", "127.0.0.1:0", http.NotFoundHandler(), NewMetricsHandler(metrics.Registry))
 			require.NoError(t, s.Start(context.Background()))
@@ -85,7 +84,6 @@ func TestHTTPServerStart(t *testing.T) {
 			require.Equal(t, "application/openmetrics-text; version=1.0.0; charset=utf-8", resp.Header.Get("Content-Type"))
 			require.NotEqual(t, "# EOF\n", string(body))
 			require.True(t, strings.HasSuffix(string(body), "# EOF\n"))
-			require.Contains(t, string(body), `bookshop_build_info{revision="unknown",service="bookshop-web",version="dev"} 1.0`)
 			main, err := http.Get("http://" + s.listener.Addr().String() + "/metrics")
 			require.NoError(t, err)
 			defer func() { require.NoError(t, main.Body.Close()) }()

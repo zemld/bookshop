@@ -22,14 +22,7 @@ type HTTPServer struct {
 func NewHTTPServer(addr, metricsAddr string, handler, metricsHandler http.Handler) *HTTPServer {
 	mux := http.NewServeMux()
 	mux.Handle("GET /metrics", metricsHandler)
-	application := http.NewServeMux()
-	respondHealthy := func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}
-	application.HandleFunc("GET /livez", respondHealthy)
-	application.HandleFunc("GET /readyz", respondHealthy)
-	application.Handle("/", handler)
-	return &HTTPServer{server: &http.Server{Addr: addr, Handler: application}, metrics: &http.Server{Addr: metricsAddr, Handler: mux}}
+	return &HTTPServer{server: &http.Server{Addr: addr, Handler: handler}, metrics: &http.Server{Addr: metricsAddr, Handler: mux}}
 }
 
 func (s *HTTPServer) SetLogger(logger *slog.Logger) {

@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"fmt"
-	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
@@ -35,23 +34,24 @@ func New() (*Service, error) {
 	return &Service{Provider: provider, Registry: registry}, nil
 }
 
-var (
-	version  = "dev"
-	revision = "unknown"
+const (
+	_buildInfoName  = "bookshop_build_info"
+	_buildInfoValue = 1
+	_serviceLabel   = "service"
+	_versionLabel   = "version"
+	_revisionLabel  = "revision"
 )
 
-func (s *Service) RegisterBuildInfo(service string, logger *slog.Logger) error {
-	info := prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "bookshop_build_info",
+func (s *Service) RegisterBuildInfo(service, version, revision string) error {
+	info := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: _buildInfoName,
 		Help: "Build information for the running Bookshop service.",
 		ConstLabels: prometheus.Labels{
-			"service": service, "version": version, "revision": revision,
+			_serviceLabel: service, _versionLabel: version, _revisionLabel: revision,
 		},
-	})
-	info.Set(1)
+	}, func() float64 { return _buildInfoValue })
 	if err := s.Registry.Register(info); err != nil {
 		return fmt.Errorf("register build info: %w", err)
 	}
-	logger.Info("loaded service build", "event", "service.build", "version", version, "revision", revision)
 	return nil
 }

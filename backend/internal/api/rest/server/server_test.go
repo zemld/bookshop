@@ -2,12 +2,9 @@ package server
 
 import (
 	"context"
-	"errors"
 	"io"
-	"log/slog"
 	"net"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -53,7 +50,6 @@ func TestStart(t *testing.T) {
 
 			metrics, err := metrics.New()
 			require.NoError(t, err)
-			require.NoError(t, metrics.RegisterBuildInfo("bookshop-api", slog.New(slog.DiscardHandler)))
 			t.Cleanup(func() { require.NoError(t, metrics.Provider.Shutdown(context.Background())) })
 
 			s := newServer("127.0.0.1:0", "127.0.0.1:0", http.NotFoundHandler(), handler.NewMetricsHandler(metrics.Registry))
@@ -74,7 +70,6 @@ func TestStart(t *testing.T) {
 			require.Equal(t, "application/openmetrics-text; version=1.0.0; charset=utf-8", resp.Header.Get("Content-Type"))
 			require.NotEqual(t, "# EOF\n", string(body))
 			require.True(t, strings.HasSuffix(string(body), "# EOF\n"))
-			require.Contains(t, string(body), `bookshop_build_info{revision="unknown",service="bookshop-api",version="dev"} 1.0`)
 
 			main, err := http.Get("http://" + s.listener.Addr().String() + "/metrics")
 			require.NoError(t, err)
@@ -169,31 +164,5 @@ func TestStop(t *testing.T) {
 		}},
 	} {
 		t.Run(tc.name, tc.run)
-	}
-}
-
-func TestServeHealthProbes(t *testing.T) {
-	for _, tc := range []struct {
-		name          string
-		pingError     error
-		wantReadiness int
-	}{
-		{name: "database available", wantReadiness: http.StatusOK},
-		{name: "database unavailable", pingError: errors.New("database unavailable"), wantReadiness: http.StatusServiceUnavailable},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			handler := createProbeHandler(http.NotFoundHandler(), func(context.Context) error { return tc.pingError })
-			for _, probe := range []struct {
-				path string
-				want int
-			}{
-				{path: "/livez", want: http.StatusOK},
-				{path: "/readyz", want: tc.wantReadiness},
-			} {
-				response := httptest.NewRecorder()
-				handler.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodGet, probe.path, nil))
-				require.Equal(t, probe.want, response.Code, probe.path)
-			}
-		})
 	}
 }

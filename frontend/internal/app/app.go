@@ -74,10 +74,11 @@ func provideMetrics(lifecycle fx.Lifecycle, cfg config.ServiceConfig, logger *sl
 	if err != nil {
 		return nil, fmt.Errorf("initialize metrics: %w", err)
 	}
-	if err := service.RegisterBuildInfo(cfg.Name, logger); err != nil {
+	if err := service.RegisterBuildInfo(cfg.Name, cfg.Version, cfg.Revision); err != nil {
 		return nil, err
 	}
 
+	logger.Info("loaded service build", "event", "service.build", "version", cfg.Version, "revision", cfg.Revision)
 	lifecycle.Append(fx.Hook{OnStop: service.Provider.Shutdown})
 	return service, nil
 }
