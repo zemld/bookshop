@@ -17,7 +17,7 @@ spec:
         prometheus.io/port: "9090"
         prometheus.io/path: "/metrics"
     spec:
-      terminationGracePeriodSeconds: 15
+      terminationGracePeriodSeconds: 20
       containers:
         - name: backend
           image: bookshop-backend:local
@@ -36,13 +36,18 @@ spec:
                 secretKeyRef:
                   name: database
                   key: password
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 5
           readinessProbe:
             httpGet:
-              path: /books
+              path: /readyz
               port: http
             periodSeconds: 3
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: /livez
               port: http
             initialDelaySeconds: 10
           resources:

@@ -14,8 +14,9 @@ import (
 )
 
 type Handler struct {
-	Books      books.Books
-	Publishers publishers.Publishers
+	Books         books.Books
+	Publishers    publishers.Publishers
+	CheckDatabase func(context.Context) error
 }
 
 var _ ogen.Handler = Handler{}

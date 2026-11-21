@@ -123,6 +123,26 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 				}
 
+			case 'l': // Prefix: "livez"
+
+				if l := len("livez"); len(elem) >= l && elem[0:l] == "livez" {
+					elem = elem[l:]
+				} else {
+					break
+				}
+
+				if len(elem) == 0 {
+					// Leaf node.
+					switch r.Method {
+					case "GET":
+						s.handleCheckLivenessRequest([0]string{}, elemIsEscaped, w, r)
+					default:
+						s.notAllowed(w, r, "GET")
+					}
+
+					return
+				}
+
 			case 'p': // Prefix: "publishers"
 
 				if l := len("publishers"); len(elem) >= l && elem[0:l] == "publishers" {
@@ -183,6 +203,26 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 
+				}
+
+			case 'r': // Prefix: "readyz"
+
+				if l := len("readyz"); len(elem) >= l && elem[0:l] == "readyz" {
+					elem = elem[l:]
+				} else {
+					break
+				}
+
+				if len(elem) == 0 {
+					// Leaf node.
+					switch r.Method {
+					case "GET":
+						s.handleCheckReadinessRequest([0]string{}, elemIsEscaped, w, r)
+					default:
+						s.notAllowed(w, r, "GET")
+					}
+
+					return
 				}
 
 			}
@@ -361,6 +401,30 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 				}
 
+			case 'l': // Prefix: "livez"
+
+				if l := len("livez"); len(elem) >= l && elem[0:l] == "livez" {
+					elem = elem[l:]
+				} else {
+					break
+				}
+
+				if len(elem) == 0 {
+					// Leaf node.
+					switch method {
+					case "GET":
+						r.name = CheckLivenessOperation
+						r.summary = ""
+						r.operationID = "checkLiveness"
+						r.pathPattern = "/livez"
+						r.args = args
+						r.count = 0
+						return r, true
+					default:
+						return
+					}
+				}
+
 			case 'p': // Prefix: "publishers"
 
 				if l := len("publishers"); len(elem) >= l && elem[0:l] == "publishers" {
@@ -441,6 +505,30 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						}
 					}
 
+				}
+
+			case 'r': // Prefix: "readyz"
+
+				if l := len("readyz"); len(elem) >= l && elem[0:l] == "readyz" {
+					elem = elem[l:]
+				} else {
+					break
+				}
+
+				if len(elem) == 0 {
+					// Leaf node.
+					switch method {
+					case "GET":
+						r.name = CheckReadinessOperation
+						r.summary = ""
+						r.operationID = "checkReadiness"
+						r.pathPattern = "/readyz"
+						r.args = args
+						r.count = 0
+						return r, true
+					default:
+						return
+					}
 				}
 
 			}

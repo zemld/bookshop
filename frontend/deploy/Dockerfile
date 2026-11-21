@@ -8,6 +8,9 @@ RUN go run github.com/a-h/templ/cmd/templ@v0.3.960 generate
 RUN CGO_ENABLED=0 go build -buildvcs=false -o /app ./cmd
 
 FROM alpine:3.21
+ARG VERSION
+ARG REVISION
+ENV APP_VERSION=${VERSION} APP_REVISION=${REVISION}
 COPY --from=build /app /app
 COPY config/config.yaml /config/config.yaml
 CMD ["/app"]

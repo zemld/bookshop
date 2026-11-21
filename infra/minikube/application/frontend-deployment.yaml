@@ -17,7 +17,7 @@ spec:
         prometheus.io/port: "9091"
         prometheus.io/path: "/metrics"
     spec:
-      terminationGracePeriodSeconds: 15
+      terminationGracePeriodSeconds: 20
       containers:
         - name: frontend
           image: bookshop-frontend:local
@@ -30,13 +30,18 @@ spec:
           env:
             - name: API_URL
               value: http://backend:8080
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 5
           readinessProbe:
             httpGet:
-              path: /books
+              path: /readyz
               port: http
             periodSeconds: 3
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: /livez
               port: http
             initialDelaySeconds: 10
           resources:
