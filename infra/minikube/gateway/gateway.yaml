@@ -1,0 +1,16 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: bookshop
+  namespace: bookshop
+spec:
+  gatewayClassName: bookshop-envoy
+  infrastructure:
+    parametersRef:
+      group: gateway.envoyproxy.io
+      kind: EnvoyProxy
+      name: bookshop
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
