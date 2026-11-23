@@ -4,7 +4,7 @@ metadata:
   name: db
   namespace: bookshop
 spec:
-  replicas: 1
+  replicas: 3
   strategy:
     type: Recreate
   selector:
