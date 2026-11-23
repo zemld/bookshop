@@ -1,0 +1,118 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_VICTORIAMETRICS",
+      "label": "VictoriaMetrics",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "victoriametrics-metrics-datasource",
+      "pluginName": "VictoriaMetrics"
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "id": null,
+  "uid": "bookshop-rollouts",
+  "title": "Bookshop · Выкатки",
+  "tags": [
+    "bookshop",
+    "minikube"
+  ],
+  "schemaVersion": 42,
+  "version": 1,
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Запросы, принятые каждой версией",
+      "description": "GET /books с X-Bookshop-Lab: rollout. При Shadow счётчик учитывает оригинал и копию.",
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "${DS_VICTORIAMETRICS}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (version) (rate(bookshop_frontend_lab_catalog_requests_total{job=\"bookshop-pods\"}[1m]))",
+          "legendFormat": "{{version}}",
+          "datasource": {
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "${DS_VICTORIAMETRICS}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Доля принятых запросов по версиям",
+      "description": "Доля от всех обращений к frontend. При Shadow это доли с учётом копий.",
+      "datasource": {
+        "type": "victoriametrics-metrics-datasource",
+        "uid": "${DS_VICTORIAMETRICS}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (version) (rate(bookshop_frontend_lab_catalog_requests_total{job=\"bookshop-pods\"}[1m])) / scalar(sum(rate(bookshop_frontend_lab_catalog_requests_total{job=\"bookshop-pods\"}[1m])) > 0)",
+          "legendFormat": "{{version}}",
+          "datasource": {
+            "type": "victoriametrics-metrics-datasource",
+            "uid": "${DS_VICTORIAMETRICS}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "range": true
+        }
+      ]
+    }
+  ]
+}

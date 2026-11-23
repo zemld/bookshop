@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-green
+  namespace: bookshop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend-green
+  template:
+    metadata:
+      labels:
+        app: frontend-green
+        app.kubernetes.io/version: v2
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9091"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 15
+      containers:
+        - name: frontend
+          image: bookshop-frontend:v2
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 8081
+            - name: metrics
+              containerPort: 9091
+          env:
+            - name: API_URL
+              value: http://backend:8080
+          readinessProbe:
+            httpGet:
+              path: /books
+              port: http
+            periodSeconds: 3
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 32Mi
+            limits:
+              memory: 128Mi

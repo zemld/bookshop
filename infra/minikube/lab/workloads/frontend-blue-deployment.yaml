@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-blue
+  namespace: bookshop
+spec:
+  replicas: 2
+  minReadySeconds: 15
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: frontend-blue
+  template:
+    metadata:
+      labels:
+        app: frontend-blue
+        app.kubernetes.io/version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9091"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 15
+      containers:
+        - name: frontend
+          image: bookshop-frontend:v1
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 8081
+            - name: metrics
+              containerPort: 9091
+          env:
+            - name: API_URL
+              value: http://backend:8080
+          readinessProbe:
+            httpGet:
+              path: /books
+              port: http
+            periodSeconds: 3
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
