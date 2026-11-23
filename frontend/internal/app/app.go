@@ -1,6 +1,7 @@
 package app
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
@@ -57,7 +58,10 @@ func New() *fx.App {
 				}
 			},
 			func(cfg config.Config, handler web.Server, logger *slog.Logger, metrics *metrics.Service) *web.HTTPServer {
-				server := web.NewHTTPServer(cfg.Server.Address, cfg.Metrics.Address, handler.CreateHandler(), web.NewMetricsHandler(metrics.Registry))
+				version := cmp.Or(os.Getenv("BOOKSHOP_VERSION"), "local")
+				catalogRequests := metrics.CatalogRequests.WithLabelValues(version)
+				versionedHandler := web.NewVersionedHandler(handler.CreateHandler(), version, catalogRequests)
+				server := web.NewHTTPServer(cfg.Server.Address, cfg.Metrics.Address, versionedHandler, web.NewMetricsHandler(metrics.Registry))
 				server.SetLogger(logger)
 				return server
 			},
