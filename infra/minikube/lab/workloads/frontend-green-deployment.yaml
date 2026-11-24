@@ -33,7 +33,7 @@ spec:
               value: http://backend:8080
           readinessProbe:
             httpGet:
-              path: /books
+              path: /readyz
               port: http
             periodSeconds: 3
           livenessProbe:

@@ -30,19 +30,19 @@ kubectl --context=minikube -n envoy-gateway-system port-forward "$proxy_service"
 Проверьте, что через шлюз приходит HTTP 200 и `X-Bookshop-Version: v1`:
 
 ```sh
-curl -fsS -D - -o /dev/null -H 'X-Bookshop-Lab: rollout' http://127.0.0.1:8088/books
+curl -fsS -D - -o /dev/null http://127.0.0.1:8088/books
 ```
 
 ## Наблюдать трафик
 
-Импортируйте в Grafana файл `docs/monitoring/bookshop-rollouts-dashboard.json` и выберите существующий источник VictoriaMetrics. Дашборд показывает запросы в секунду и долю принятых запросов по версии. В счётчик входят только `GET /books` с заголовком `X-Bookshop-Lab: rollout`. Так проверки Kubernetes и Blackbox не добавляют фоновый трафик.
+Импортируйте в Grafana файл `docs/monitoring/bookshop-rollouts-dashboard.json` и выберите существующий источник VictoriaMetrics. Дашборд показывает запросы в секунду и долю принятых запросов по версии. Дашборд учитывает все `GET /books` на Blue и Green, включая открытия каталога в браузере. Kubernetes проверяет готовность через `/readyz`. Blackbox проверяет основной frontend, который находится за пределами дашборда лаборатории.
 
 В отдельном терминале оставьте этот цикл работать во время переключений. Каждая строка показывает HTTP-статус и версию, которая ответила клиенту. На каждой ступени держите нагрузку минимум минуту, чтобы окно расчёта в Grafana успело обновиться. Для остановки нажмите Ctrl+C.
 
 ```sh
 while true; do
   curl -sS --max-time 3 -o /dev/null -w '%{http_code} %header{x-bookshop-version}\n' \
-    -H 'X-Bookshop-Lab: rollout' -H "X-Bookshop-Cohort: ${COHORT:-default}" \
+    -H "X-Bookshop-Cohort: ${COHORT:-default}" \
     http://127.0.0.1:8088/books
   sleep 0.2
 done
@@ -89,8 +89,8 @@ kubectl --context=minikube -n bookshop apply -f infra/minikube/lab/routes/green.
 
 ```sh
 kubectl --context=minikube -n bookshop apply -f infra/minikube/lab/routes/ab.yaml
-curl -fsS -D - -o /dev/null -H 'X-Bookshop-Lab: rollout' http://127.0.0.1:8088/books
-curl -fsS -D - -o /dev/null -H 'X-Bookshop-Lab: rollout' \
+curl -fsS -D - -o /dev/null http://127.0.0.1:8088/books
+curl -fsS -D - -o /dev/null \
   -H 'X-Bookshop-Cohort: beta' http://127.0.0.1:8088/books
 ```
 

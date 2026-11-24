@@ -24,8 +24,8 @@ func New() (*Service, error) {
 		return nil, fmt.Errorf("register process collector: %w", err)
 	}
 	catalogRequests := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "bookshop_frontend_lab_catalog_requests_total",
-		Help: "Number of lab GET /books requests received by the frontend.",
+		Name: "bookshop_frontend_catalog_requests_total",
+		Help: "Number of GET /books requests received by the frontend.",
 	}, []string{"version"})
 	if err := registry.Register(catalogRequests); err != nil {
 		return nil, fmt.Errorf("register catalog requests: %w", err)

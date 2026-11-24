@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestReportVersionAndCountLabCatalogRequests(t *testing.T) {
+func TestReportVersionAndCountCatalogRequests(t *testing.T) {
 	requests := prometheus.NewCounter(prometheus.CounterOpts{Name: "catalog_requests_total"})
 	registry := prometheus.NewRegistry()
 	require.NoError(t, registry.Register(requests))
@@ -21,17 +21,15 @@ func TestReportVersionAndCountLabCatalogRequests(t *testing.T) {
 		name   string
 		method string
 		path   string
-		marker string
 		count  float64
 	}{
-		{"readiness probe", http.MethodGet, "/books", "", 0},
-		{"different path", http.MethodGet, "/publishers", "rollout", 0},
-		{"different method", http.MethodPost, "/books", "rollout", 0},
-		{"lab catalog request", http.MethodGet, "/books", "rollout", 1},
+		{"readiness probe", http.MethodGet, "/readyz", 0},
+		{"different path", http.MethodGet, "/publishers", 0},
+		{"different method", http.MethodPost, "/books", 0},
+		{"catalog request", http.MethodGet, "/books", 1},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			request := httptest.NewRequest(tc.method, tc.path, nil)
-			request.Header.Set("X-Bookshop-Lab", tc.marker)
 			response := httptest.NewRecorder()
 
 			handler.ServeHTTP(response, request)
