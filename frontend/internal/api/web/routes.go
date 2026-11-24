@@ -30,6 +30,13 @@ func (s Server) CreateHandler() http.Handler {
 	m.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/books", http.StatusSeeOther)
 	})
+	m.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := s.Books.ListBooks(r.Context()); err != nil {
+			http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	})
 	s.registerPublisherRoutes(m)
 	s.registerBookRoutes(m)
 	return NewRequestLoggingMiddleware(m, s.Logger)
